@@ -53,6 +53,7 @@ cp .env.example .env
 ```
 
 Обязательные переменные:
+
 - `DATABASE_URL` - PostgreSQL connection string (Supabase)
 - `SUPABASE_URL` - URL вашего Supabase проекта
 - `SUPABASE_ANON_KEY` - Supabase anon key
@@ -83,34 +84,70 @@ npm run dev
 ## Команды NPM
 
 ### Разработка
+
 - `npm run dev` - Запуск dev сервера с hot-reload
 - `npm run build` - Сборка production версии
 - `npm start` - Запуск production сервера
 
 ### Тестирование (TDD)
+
 - `npm test` - Запуск тестов в watch mode
 - `npm run test:ui` - Запуск тестов с UI интерфейсом
 - `npm run test:coverage` - Запуск тестов с coverage
 
 ### База данных
+
 - `npm run db:generate` - Генерация Prisma Client
 - `npm run db:migrate` - Создание и применение миграций
 - `npm run db:push` - Быстрый push схемы (для dev)
 - `npm run db:studio` - Открыть Prisma Studio
 
 ### Code Quality
+
 - `npm run lint` - Проверка кода ESLint
 - `npm run format` - Форматирование кода Prettier
 
 ### Версионирование
+
 - `npm run release:patch` - Patch version (1.0.0 → 1.0.1)
 - `npm run release:minor` - Minor version (1.0.0 → 1.1.0)
 - `npm run release:major` - Major version (1.0.0 → 2.0.0)
 - `npm run release` - Build + Test + Patch version
 
+## Git Hooks (обязательные проверки)
+
+Проект использует Husky для автоматической проверки качества кода:
+
+### Pre-commit Hook
+
+- ✅ ESLint (Google Style Guide) + auto-fix
+- ✅ Prettier форматирование
+- ✅ Проверяются только staged файлы
+
+**Коммит блокируется** если есть ошибки линтинга.
+
+### Pre-push Hook (только для master)
+
+- ✅ ESLint полная проверка
+- ✅ Все тесты с coverage
+- ✅ TypeScript build
+
+**Push в master блокируется** если тесты не проходят или есть ошибки.
+
+📖 Подробнее: [HOOKS.md](./HOOKS.md) | Краткая справка: [HOOKS-SUMMARY.md](./HOOKS-SUMMARY.md)
+
+## Git Workflow
+
+- **`master`** - production ветка (только stable код)
+- **`dev`** - основная разработка
+- **`feature/*`** - опциональные feature ветки
+
+📖 Подробнее: [GIT-WORKFLOW.md](./GIT-WORKFLOW.md)
+
 ## API Endpoints (Planned)
 
 ### Week 1-2
+
 - `POST /api/v1/auth/register` - Регистрация пользователя
 - `POST /api/v1/auth/login` - Вход пользователя
 - `GET /api/v1/auth/me` - Получить текущего пользователя
@@ -124,6 +161,7 @@ npm run dev
 - `GET /api/v1/owner/listings` - Листинги владельца
 
 ### Week 3-4 (Planned)
+
 - `POST /api/v1/applications` - Подать заявку на аренду
 - `GET /api/v1/applications` - Список заявок
 - `POST /api/v1/applications/:id/score` - AI скоринг заявки
@@ -131,6 +169,7 @@ npm run dev
 - `GET /api/v1/contracts/:id/pdf` - Скачать PDF контракта
 
 ### Week 5-6 (Planned)
+
 - `POST /api/v1/payments/create-intent` - Создать Payment Intent (Stripe)
 - `POST /api/v1/payments/webhook` - Webhook от Stripe
 
@@ -166,12 +205,14 @@ git commit -m "feat: add user registration"
 ### Задачи для реализации
 
 #### 1. Настройка Supabase проекта
+
 - [ ] Создать проект на Supabase
 - [ ] Скопировать DATABASE_URL, SUPABASE_URL, SUPABASE_ANON_KEY
 - [ ] Настроить Storage buckets для документов
 - [ ] Применить Prisma миграции
 
 #### 2. Auth endpoints (TDD)
+
 - [ ] Написать тест для `POST /auth/register`
 - [ ] Реализовать registration controller
 - [ ] Написать тест для `POST /auth/login`
@@ -179,29 +220,34 @@ git commit -m "feat: add user registration"
 - [ ] Написать auth middleware для защиты routes
 
 #### 3. Health & Testing
+
 - [ ] Проверить health check endpoint
 - [ ] Убедиться что все тесты проходят
 - [ ] Coverage > 80%
 
 ### Day 3-4: Document Upload
+
 - [ ] Настроить Supabase Storage buckets
 - [ ] Middleware для file upload
 - [ ] `POST /documents` endpoint
 - [ ] Тесты для upload
 
 ### Day 5-7: Documents API
+
 - [ ] `GET /documents` - список документов
 - [ ] `GET /documents/:id` - детали
 - [ ] `DELETE /documents/:id` - удаление
 - [ ] Row-level security
 
 ### Day 8-10: AI Document Verification
+
 - [ ] Интеграция Anthropic SDK
 - [ ] `POST /documents/:id/verify` endpoint
 - [ ] Парсинг AI response
 - [ ] Тесты с mock AI responses
 
 ### Day 11-14: Listings CRUD
+
 - [ ] `POST /listings` - создание листинга
 - [ ] `GET /listings` - список всех
 - [ ] `GET /owner/listings` - листинги владельца
@@ -226,6 +272,7 @@ git commit -m "feat: add user registration"
 ## Deployment (Planned)
 
 Рекомендуемые платформы:
+
 - **Railway.app** ($5/месяц)
 - **Render.com** (бесплатный tier)
 
