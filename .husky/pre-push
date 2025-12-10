@@ -1,0 +1,41 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Get current branch name
+branch="$(git rev-parse --abbrev-ref HEAD)"
+
+# Check if pushing to master
+if [ "$branch" = "master" ]; then
+  echo "🔍 Pushing to master - running full test suite..."
+
+  # Run linting
+  echo "📋 Running ESLint..."
+  npm run lint
+
+  if [ $? -ne 0 ]; then
+    echo "❌ ESLint failed. Please fix linting errors before pushing to master."
+    exit 1
+  fi
+
+  # Run tests
+  echo "🧪 Running tests..."
+  npm run test:coverage
+
+  if [ $? -ne 0 ]; then
+    echo "❌ Tests failed. Please fix failing tests before pushing to master."
+    exit 1
+  fi
+
+  # Run build
+  echo "🔨 Running build..."
+  npm run build
+
+  if [ $? -ne 0 ]; then
+    echo "❌ Build failed. Please fix build errors before pushing to master."
+    exit 1
+  fi
+
+  echo "✅ All checks passed! Safe to push to master."
+fi
+
+exit 0
