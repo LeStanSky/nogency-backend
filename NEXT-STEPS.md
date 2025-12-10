@@ -10,6 +10,119 @@
 - Git репозиторий ✅
 - Структура проекта ✅
 - Health check endpoint ✅
+- Root endpoint (/) и /health работают ✅
+
+## Что делать дальше? Два варианта
+
+### Вариант 1: Сначала настроить Supabase (рекомендуется для production)
+
+**Преимущества:**
+- Сразу работаем с реальной PostgreSQL базой
+- Настроим Prisma миграции
+- Не нужны будет моки для БД
+- Supabase Auth + Storage готовы к использованию
+
+**Шаги:**
+
+1. **Создать Supabase проект:**
+   - Зайти на https://supabase.com
+   - Зарегистрироваться / войти
+   - Создать новый проект (выбрать регион, придумать пароль)
+   - Дождаться создания проекта (~2 минуты)
+
+2. **Скопировать credentials:**
+   ```bash
+   # В Supabase Dashboard → Settings → API
+   # Скопировать:
+   # - Project URL → SUPABASE_URL
+   # - anon/public key → SUPABASE_ANON_KEY
+   # - service_role key → SUPABASE_SERVICE_KEY
+
+   # В Supabase Dashboard → Settings → Database
+   # Скопировать Connection String (URI) → DATABASE_URL
+   ```
+
+3. **Настроить .env файл:**
+   ```bash
+   cp .env.example .env
+   # Заполнить переменные из Supabase
+   ```
+
+4. **Применить Prisma миграции:**
+   ```bash
+   npm run db:migrate    # Создать и применить миграции
+   npm run db:generate   # Генерировать Prisma Client
+   npm run db:studio     # Открыть GUI для просмотра БД
+   ```
+
+5. **Настроить Supabase Storage:**
+   - В Supabase Dashboard → Storage
+   - Создать bucket "documents" (private)
+   - Создать bucket "listings" (public)
+
+6. **Начать TDD для Authentication API** (см. раздел ниже)
+
+---
+
+### Вариант 2: Начать сразу с TDD (быстрый старт, моки для БД)
+
+**Преимущества:**
+- Можно сразу писать код и тесты
+- Не нужно регистрироваться в Supabase прямо сейчас
+- Работаем с моками, подключим БД позже
+- Быстрее начать разработку
+
+**Шаги:**
+
+1. **Написать failing тест для `POST /api/v1/auth/register`:**
+   ```bash
+   # Создадим файл tests/auth.test.ts
+   # Напишем первый Red тест
+   ```
+
+2. **Настроить роуты и контроллеры:**
+   ```typescript
+   // src/routes/auth.routes.ts
+   // src/controllers/auth.controller.ts
+   // src/services/auth.service.ts (с моками БД)
+   ```
+
+3. **Реализовать базовую логику:**
+   - Validation с Zod
+   - Password hashing
+   - JWT токены
+   - Mock для Prisma Client
+
+4. **Покрыть тестами:**
+   - Registration
+   - Login
+   - Auth middleware
+   - Validation errors
+
+5. **Когда будет готов Supabase - заменить моки на реальную БД**
+
+**Что будем использовать как mock:**
+```typescript
+// Временный in-memory storage для users
+const users: Map<string, User> = new Map();
+
+// Позже заменим на:
+await prisma.profile.create({ data: ... })
+```
+
+---
+
+### Мой совет: Какой вариант выбрать?
+
+**Если хотите быстро начать кодить →** Вариант 2
+- Сразу пишем тесты и код
+- Supabase подключим через 1-2 дня когда будет нужен
+
+**Если хотите сразу production-ready setup →** Вариант 1
+- Настроим всё сразу правильно
+- Не нужно будет переделывать моки
+
+---
 
 ## Day 1-2: Authentication API (Следующий шаг)
 

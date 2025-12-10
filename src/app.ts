@@ -23,6 +23,20 @@ export const createApp = async (): Promise<FastifyInstance> => {
     },
   });
 
+  // Root route
+  app.get('/', async () => {
+    return {
+      name: 'NoGency AI - Backend API',
+      version: '1.0.0',
+      status: 'running',
+      endpoints: {
+        health: '/health',
+        api: '/api/v1',
+      },
+      docs: 'See README.md for API documentation',
+    };
+  });
+
   // Health check route
   app.get('/health', async () => {
     return { status: 'ok', timestamp: new Date().toISOString() };
