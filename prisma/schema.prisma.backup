@@ -1,0 +1,181 @@
+// Prisma Schema for NoGency AI Backend
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User Profile Model
+model Profile {
+  id        String   @id @default(uuid())
+  role      Role     @default(TENANT)
+  fullName  String?  @map("full_name")
+  phone     String?
+  email     String   @unique
+  verified  Boolean  @default(false)
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  documents        Document[]
+  listings         Listing[]
+  applications     Application[]
+  ownedContracts   Contract[]    @relation("OwnerContracts")
+  tenantContracts  Contract[]    @relation("TenantContracts")
+  payments         Payment[]
+
+  @@map("profiles")
+}
+
+enum Role {
+  OWNER
+  TENANT
+  ADMIN
+}
+
+// Document Model (DNI, Payslips, etc.)
+model Document {
+  id               String   @id @default(uuid())
+  userId           String   @map("user_id")
+  type             String
+  fileUrl          String   @map("file_url")
+  fileName         String?  @map("file_name")
+  verified         Boolean  @default(false)
+  verificationData Json?    @map("verification_data")
+  uploadedAt       DateTime @default(now()) @map("uploaded_at")
+
+  user Profile @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+  @@map("documents")
+}
+
+// Listing Model (Property Listings)
+model Listing {
+  id           String        @id @default(uuid())
+  ownerId      String        @map("owner_id")
+  title        String
+  description  String?
+  address      String
+  city         String?
+  postalCode   String?       @map("postal_code")
+  priceMonthly Decimal       @map("price_monthly") @db.Decimal(10, 2)
+  bedrooms     Int?
+  bathrooms    Int?
+  squareMeters Int?          @map("square_meters")
+  status       ListingStatus @default(DRAFT)
+  publishedAt  DateTime?     @map("published_at")
+  createdAt    DateTime      @default(now()) @map("created_at")
+  updatedAt    DateTime      @updatedAt @map("updated_at")
+
+  owner        Profile        @relation(fields: [ownerId], references: [id])
+  photos       ListingPhoto[]
+  applications Application[]
+  contracts    Contract[]
+
+  @@index([ownerId])
+  @@index([status])
+  @@map("listings")
+}
+
+enum ListingStatus {
+  DRAFT
+  ACTIVE
+  RENTED
+  INACTIVE
+}
+
+// Listing Photos
+model ListingPhoto {
+  id         String   @id @default(uuid())
+  listingId  String   @map("listing_id")
+  fileUrl    String   @map("file_url")
+  isPrimary  Boolean  @default(false) @map("is_primary")
+  orderIndex Int?     @map("order_index")
+  uploadedAt DateTime @default(now()) @map("uploaded_at")
+
+  listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@map("listing_photos")
+}
+
+// Application Model (Tenant Applications)
+model Application {
+  id               String            @id @default(uuid())
+  listingId        String            @map("listing_id")
+  tenantId         String            @map("tenant_id")
+  status           ApplicationStatus @default(PENDING)
+  employmentStatus String?           @map("employment_status")
+  monthlyIncome    Decimal?          @map("monthly_income") @db.Decimal(10, 2)
+  moveInDate       DateTime?         @map("move_in_date") @db.Date
+  message          String?
+  aiScore          Int?              @map("ai_score")
+  aiReasoning      String?           @map("ai_reasoning")
+  scoredAt         DateTime?         @map("scored_at")
+  createdAt        DateTime          @default(now()) @map("created_at")
+  updatedAt        DateTime          @updatedAt @map("updated_at")
+
+  listing   Listing    @relation(fields: [listingId], references: [id])
+  tenant    Profile    @relation(fields: [tenantId], references: [id])
+  contracts Contract[]
+
+  @@index([listingId])
+  @@index([tenantId])
+  @@index([status])
+  @@map("applications")
+}
+
+enum ApplicationStatus {
+  PENDING
+  REVIEWED
+  APPROVED
+  REJECTED
+}
+
+// Contract Model (Rental Contracts)
+model Contract {
+  id              String    @id @default(uuid())
+  applicationId   String    @map("application_id")
+  listingId       String    @map("listing_id")
+  ownerId         String    @map("owner_id")
+  tenantId        String    @map("tenant_id")
+  contractPdfUrl  String?   @map("contract_pdf_url")
+  signedByOwner   Boolean   @default(false) @map("signed_by_owner")
+  signedByTenant  Boolean   @default(false) @map("signed_by_tenant")
+  startDate       DateTime  @map("start_date") @db.Date
+  endDate         DateTime  @map("end_date") @db.Date
+  monthlyRent     Decimal   @map("monthly_rent") @db.Decimal(10, 2)
+  deposit         Decimal?  @db.Decimal(10, 2)
+  createdAt       DateTime  @default(now()) @map("created_at")
+  signedAt        DateTime? @map("signed_at")
+
+  application Application @relation(fields: [applicationId], references: [id])
+  listing     Listing     @relation(fields: [listingId], references: [id])
+  owner       Profile     @relation("OwnerContracts", fields: [ownerId], references: [id])
+  tenant      Profile     @relation("TenantContracts", fields: [tenantId], references: [id])
+  payments    Payment[]
+
+  @@index([applicationId])
+  @@map("contracts")
+}
+
+// Payment Model (Stripe Payments)
+model Payment {
+  id                    String    @id @default(uuid())
+  contractId            String?   @map("contract_id")
+  tenantId              String    @map("tenant_id")
+  stripePaymentIntentId String?   @unique @map("stripe_payment_intent_id")
+  amount                Decimal   @db.Decimal(10, 2)
+  status                String?
+  type                  String?
+  createdAt             DateTime  @default(now()) @map("created_at")
+  paidAt                DateTime? @map("paid_at")
+
+  contract Contract? @relation(fields: [contractId], references: [id])
+  tenant   Profile   @relation(fields: [tenantId], references: [id])
+
+  @@map("payments")
+}

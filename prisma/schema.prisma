@@ -1,4 +1,6 @@
 // Prisma Schema for NoGency AI Backend
+// Based on nogency-domain-model-final.json v2.0.0
+// Total Entities: 26
 
 generator client {
   provider = "prisma-client-js"
@@ -9,73 +11,348 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// User Profile Model
-model Profile {
+// ============================================================================
+// CORE USER & PROFILE MODELS
+// ============================================================================
+
+model User {
+  id                 String    @id @default(uuid())
+  email              String    @unique
+  phone              String?
+  passwordHash       String    @map("password_hash")
+  isEmailVerified    Boolean   @default(false) @map("is_email_verified")
+  isPhoneVerified    Boolean   @default(false) @map("is_phone_verified")
+  preferredLanguage  String?   @map("preferred_language")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  roles              UserRole[]
+  ownerProfile       OwnerProfile?
+  tenantProfile      TenantProfile?
+  notifications      Notification[]
+  sentMessages       Message[]
+  conversationParticipants ConversationParticipant[]
+
+  @@map("users")
+}
+
+model UserRole {
   id        String   @id @default(uuid())
-  role      Role     @default(TENANT)
-  fullName  String?  @map("full_name")
-  phone     String?
-  email     String   @unique
-  verified  Boolean  @default(false)
+  userId    String   @map("user_id")
+  role      Role
   createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
 
-  documents        Document[]
-  listings         Listing[]
-  applications     Application[]
-  ownedContracts   Contract[]    @relation("OwnerContracts")
-  tenantContracts  Contract[]    @relation("TenantContracts")
-  payments         Payment[]
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-  @@map("profiles")
+  @@unique([userId, role])
+  @@index([userId])
+  @@map("user_roles")
 }
 
 enum Role {
   OWNER
   TENANT
+  AGENT
   ADMIN
 }
 
-// Document Model (DNI, Payslips, etc.)
-model Document {
-  id               String   @id @default(uuid())
-  userId           String   @map("user_id")
-  type             String
-  fileUrl          String   @map("file_url")
-  fileName         String?  @map("file_name")
-  verified         Boolean  @default(false)
-  verificationData Json?    @map("verification_data")
-  uploadedAt       DateTime @default(now()) @map("uploaded_at")
+// ============================================================================
+// OWNER PROFILE
+// ============================================================================
 
-  user Profile @relation(fields: [userId], references: [id])
+model OwnerProfile {
+  id               String        @id @default(uuid())
+  userId           String        @unique @map("user_id")
+  firstName        String        @map("first_name")
+  lastName         String        @map("last_name")
+  documentType     DocumentType  @map("document_type")
+  documentNumber   String        @map("document_number")
+  isCompany        Boolean       @default(false) @map("is_company")
+  companyName      String?       @map("company_name")
+  taxId            String?       @map("tax_id")
+  isVerified       Boolean       @default(false) @map("is_verified")
+  verificationDate DateTime?     @map("verification_date")
+  bankAccountIban  String?       @map("bank_account_iban")
+  createdAt        DateTime      @default(now()) @map("created_at")
+  updatedAt        DateTime      @updatedAt @map("updated_at")
+
+  user             User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  properties       Property[]
+  listings         Listing[]
+  contracts        LeaseContract[] @relation("OwnerContracts")
+  meetings         Meeting[]      @relation("OwnerMeetings")
+  paymentsReceived Payment[]      @relation("OwnerPayments")
+  commissions      CommissionRecord[]
 
   @@index([userId])
-  @@map("documents")
+  @@map("owner_profiles")
 }
 
-// Listing Model (Property Listings)
+enum DocumentType {
+  DNI
+  NIE
+  TIE
+  PASSPORT
+}
+
+// ============================================================================
+// TENANT PROFILE
+// ============================================================================
+
+model TenantProfile {
+  id                    String           @id @default(uuid())
+  userId                String           @unique @map("user_id")
+  firstName             String           @map("first_name")
+  lastName              String           @map("last_name")
+  dateOfBirth           DateTime?        @map("date_of_birth") @db.Date
+  documentType          DocumentType     @map("document_type")
+  documentNumber        String           @map("document_number")
+  occupation            Occupation?
+  employerName          String?          @map("employer_name")
+  monthlyIncome         Decimal?         @map("monthly_income") @db.Decimal(10, 2)
+  hasPets               Boolean          @default(false) @map("has_pets")
+  petsDescription       String?          @map("pets_description")
+  numberOfOccupants     Int?             @map("number_of_occupants")
+  hasChildren           Boolean?         @map("has_children")
+  childrenAges          Int[]            @map("children_ages")
+  preferredMoveInDate   DateTime?        @map("preferred_move_in_date") @db.Date
+  rentalDurationMonths  Int?             @map("rental_duration_months")
+  applicationSource     ApplicationSource? @map("application_source")
+  isEmailVerified       Boolean          @default(false) @map("is_email_verified")
+  createdAt             DateTime         @default(now()) @map("created_at")
+  updatedAt             DateTime         @updatedAt @map("updated_at")
+
+  user                  User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  applications          Application[]
+  contracts             LeaseContract[]  @relation("TenantContracts")
+  meetings              Meeting[]        @relation("TenantMeetings")
+  paymentsMade          Payment[]        @relation("TenantPayments")
+
+  @@index([userId])
+  @@map("tenant_profiles")
+}
+
+enum Occupation {
+  EMPLOYED
+  SELF_EMPLOYED
+  STUDENT
+  RETIRED
+  OTHER
+}
+
+enum ApplicationSource {
+  APP
+  WHATSAPP
+  EMAIL
+}
+
+// ============================================================================
+// PROPERTY MODELS
+// ============================================================================
+
+model Property {
+  id                    String              @id @default(uuid())
+  ownerId               String              @map("owner_id")
+
+  // Address (stored as JSON)
+  address               Json
+
+  // Property Details
+  propertyType          PropertyType        @map("property_type")
+  totalArea             Decimal             @map("total_area") @db.Decimal(10, 2)
+  livingArea            Decimal?            @map("living_area") @db.Decimal(10, 2)
+  roomCount             Int                 @map("room_count")
+  floor                 Int?
+  totalFloors           Int?                @map("total_floors")
+  yearBuilt             Int?                @map("year_built")
+  repairQuality         RepairQuality?      @map("repair_quality")
+  repairYear            Int?                @map("repair_year")
+  furnished             FurnishedType?
+  balconyCount          Int?                @map("balcony_count")
+  terraceArea           Decimal?            @map("terrace_area") @db.Decimal(10, 2)
+
+  // Utilities
+  hasAirConditioning    Boolean             @default(false) @map("has_air_conditioning")
+  airConditioningDetails String?            @map("air_conditioning_details")
+  heatingType           HeatingType?        @map("heating_type")
+  hotWaterType          HotWaterType?       @map("hot_water_type")
+  kitchenType           KitchenType?        @map("kitchen_type")
+  kitchenDetails        String?             @map("kitchen_details")
+  windowsDirection      String?             @map("windows_direction")
+
+  // Amenities (stored as JSON array)
+  amenities             Json?
+
+  // Verification
+  isVerified            Boolean             @default(false) @map("is_verified")
+  verificationStatus    VerificationStatus  @default(PENDING) @map("verification_status")
+  cadastralNumber       String?             @map("cadastral_number")
+
+  createdAt             DateTime            @default(now()) @map("created_at")
+  updatedAt             DateTime            @updatedAt @map("updated_at")
+
+  owner                 OwnerProfile        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  photos                PropertyPhoto[]
+  documents             PropertyDocument[]
+  valuations            PropertyValuation[]
+  listings              Listing[]
+  meetings              Meeting[]
+
+  @@index([ownerId])
+  @@index([verificationStatus])
+  @@map("properties")
+}
+
+enum PropertyType {
+  APARTMENT
+  HOUSE
+  STUDIO
+  ROOM
+}
+
+enum RepairQuality {
+  NEW
+  GOOD
+  OLD
+}
+
+enum FurnishedType {
+  NONE
+  PARTLY
+  FULLY
+}
+
+enum HeatingType {
+  GAS
+  ELECTRIC
+  CENTRAL
+  NONE
+}
+
+enum HotWaterType {
+  GAS
+  ELECTRIC
+  CENTRAL
+}
+
+enum KitchenType {
+  SEPARATE
+  OPEN
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+model PropertyPhoto {
+  id         String   @id @default(uuid())
+  propertyId String   @map("property_id")
+  url        String
+  sortOrder  Int      @default(0) @map("sort_order")
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([propertyId])
+  @@map("property_photos")
+}
+
+model PropertyDocument {
+  id         String              @id @default(uuid())
+  propertyId String              @map("property_id")
+  type       PropertyDocumentType
+  fileUrl    String              @map("file_url")
+  status     DocumentStatus      @default(PENDING)
+  reviewerId String?             @map("reviewer_id")
+  comment    String?
+  createdAt  DateTime            @default(now()) @map("created_at")
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([propertyId])
+  @@index([status])
+  @@map("property_documents")
+}
+
+enum PropertyDocumentType {
+  NOTA_SIMPLE
+  ESCRITURA
+  IBI
+  POWER_OF_ATTORNEY
+  OTHER
+}
+
+enum DocumentStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+}
+
+model PropertyValuation {
+  id                String   @id @default(uuid())
+  propertyId        String   @map("property_id")
+  stage             ValuationStage
+  basePrice         Decimal  @map("base_price") @db.Decimal(10, 2)
+  adjustmentPercent Decimal  @map("adjustment_percent") @db.Decimal(5, 2)
+  suggestedPrice    Decimal  @map("suggested_price") @db.Decimal(10, 2)
+  factors           Json
+  createdAt         DateTime @default(now()) @map("created_at")
+
+  property Property @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+
+  @@index([propertyId])
+  @@map("property_valuations")
+}
+
+enum ValuationStage {
+  INITIAL
+  DETAILED
+  FINAL
+}
+
+// ============================================================================
+// LISTING MODELS
+// ============================================================================
+
 model Listing {
-  id           String        @id @default(uuid())
-  ownerId      String        @map("owner_id")
-  title        String
-  description  String?
-  address      String
-  city         String?
-  postalCode   String?       @map("postal_code")
-  priceMonthly Decimal       @map("price_monthly") @db.Decimal(10, 2)
-  bedrooms     Int?
-  bathrooms    Int?
-  squareMeters Int?          @map("square_meters")
-  status       ListingStatus @default(DRAFT)
-  publishedAt  DateTime?     @map("published_at")
-  createdAt    DateTime      @default(now()) @map("created_at")
-  updatedAt    DateTime      @updatedAt @map("updated_at")
+  id                      String        @id @default(uuid())
+  propertyId              String        @map("property_id")
+  ownerId                 String        @map("owner_id")
+  title                   String
+  description             String        @db.Text
+  monthlyRent             Decimal       @map("monthly_rent") @db.Decimal(10, 2)
+  depositAmount           Decimal       @map("deposit_amount") @db.Decimal(10, 2)
+  utilitiesIncluded       Boolean       @default(false) @map("utilities_included")
+  minLeaseTermMonths      Int           @map("min_lease_term_months")
+  maxLeaseTermMonths      Int?          @map("max_lease_term_months")
+  availableFrom           DateTime      @map("available_from") @db.Date
+  status                  ListingStatus @default(DRAFT)
 
-  owner        Profile        @relation(fields: [ownerId], references: [id])
-  photos       ListingPhoto[]
+  // Tenant Criteria (stored as JSON)
+  preferredTenantCriteria Json?         @map("preferred_tenant_criteria")
+
+  // Stats
+  viewsCount              Int           @default(0) @map("views_count")
+  applicationsCount       Int           @default(0) @map("applications_count")
+  favoritesCount          Int           @default(0) @map("favorites_count")
+
+  // Publishing channels
+  channels                String[]
+
+  createdAt               DateTime      @default(now()) @map("created_at")
+  publishedAt             DateTime?     @map("published_at")
+  updatedAt               DateTime      @updatedAt @map("updated_at")
+
+  property     Property       @relation(fields: [propertyId], references: [id], onDelete: Cascade)
+  owner        OwnerProfile   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  viewingSlots ViewingSlot[]
   applications Application[]
-  contracts    Contract[]
+  contracts    LeaseContract[]
+  conversations Conversation[]
 
+  @@index([propertyId])
   @@index([ownerId])
   @@index([status])
   @@map("listings")
@@ -84,43 +361,51 @@ model Listing {
 enum ListingStatus {
   DRAFT
   ACTIVE
+  PAUSED
   RENTED
-  INACTIVE
+  ARCHIVED
 }
 
-// Listing Photos
-model ListingPhoto {
-  id         String   @id @default(uuid())
-  listingId  String   @map("listing_id")
-  fileUrl    String   @map("file_url")
-  isPrimary  Boolean  @default(false) @map("is_primary")
-  orderIndex Int?     @map("order_index")
-  uploadedAt DateTime @default(now()) @map("uploaded_at")
+model ViewingSlot {
+  id          String   @id @default(uuid())
+  listingId   String   @map("listing_id")
+  startAt     DateTime @map("start_at")
+  endAt       DateTime @map("end_at")
+  isAvailable Boolean  @default(true) @map("is_available")
+  createdAt   DateTime @default(now()) @map("created_at")
 
   listing Listing @relation(fields: [listingId], references: [id], onDelete: Cascade)
 
-  @@map("listing_photos")
+  @@index([listingId])
+  @@index([startAt])
+  @@map("viewing_slots")
 }
 
-// Application Model (Tenant Applications)
-model Application {
-  id               String            @id @default(uuid())
-  listingId        String            @map("listing_id")
-  tenantId         String            @map("tenant_id")
-  status           ApplicationStatus @default(PENDING)
-  employmentStatus String?           @map("employment_status")
-  monthlyIncome    Decimal?          @map("monthly_income") @db.Decimal(10, 2)
-  moveInDate       DateTime?         @map("move_in_date") @db.Date
-  message          String?
-  aiScore          Int?              @map("ai_score")
-  aiReasoning      String?           @map("ai_reasoning")
-  scoredAt         DateTime?         @map("scored_at")
-  createdAt        DateTime          @default(now()) @map("created_at")
-  updatedAt        DateTime          @updatedAt @map("updated_at")
+// ============================================================================
+// APPLICATION MODELS
+// ============================================================================
 
-  listing   Listing    @relation(fields: [listingId], references: [id])
-  tenant    Profile    @relation(fields: [tenantId], references: [id])
-  contracts Contract[]
+model Application {
+  id                      String             @id @default(uuid())
+  listingId               String             @map("listing_id")
+  tenantId                String             @map("tenant_id")
+  status                  ApplicationStatus  @default(PENDING)
+  source                  ApplicationSource
+  message                 String?            @db.Text
+  proposedMoveInDate      DateTime?          @map("proposed_move_in_date") @db.Date
+  proposedLeaseTermMonths Int?               @map("proposed_lease_term_months")
+  scoringAtApplication    Decimal?           @map("scoring_at_application") @db.Decimal(5, 2)
+  rejectionReason         String?            @map("rejection_reason") @db.Text
+  createdAt               DateTime           @default(now()) @map("created_at")
+  updatedAt               DateTime           @updatedAt @map("updated_at")
+
+  listing    Listing              @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  tenant     TenantProfile        @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  documents  ApplicationDocument[]
+  scoring    TenantScoring?
+  meetings   Meeting[]
+  contracts  LeaseContract[]
+  conversations Conversation[]
 
   @@index([listingId])
   @@index([tenantId])
@@ -130,52 +415,464 @@ model Application {
 
 enum ApplicationStatus {
   PENDING
-  REVIEWED
+  REVIEWING
+  SHORTLISTED
+  VIEWING_SCHEDULED
   APPROVED
   REJECTED
+  WITHDRAWN
 }
 
-// Contract Model (Rental Contracts)
-model Contract {
-  id              String    @id @default(uuid())
-  applicationId   String    @map("application_id")
-  listingId       String    @map("listing_id")
-  ownerId         String    @map("owner_id")
-  tenantId        String    @map("tenant_id")
-  contractPdfUrl  String?   @map("contract_pdf_url")
-  signedByOwner   Boolean   @default(false) @map("signed_by_owner")
-  signedByTenant  Boolean   @default(false) @map("signed_by_tenant")
-  startDate       DateTime  @map("start_date") @db.Date
-  endDate         DateTime  @map("end_date") @db.Date
-  monthlyRent     Decimal   @map("monthly_rent") @db.Decimal(10, 2)
-  deposit         Decimal?  @db.Decimal(10, 2)
-  createdAt       DateTime  @default(now()) @map("created_at")
-  signedAt        DateTime? @map("signed_at")
+model ApplicationDocument {
+  id            String                  @id @default(uuid())
+  applicationId String                  @map("application_id")
+  type          ApplicationDocumentType
+  fileUrl       String                  @map("file_url")
+  status        DocumentStatus          @default(PENDING)
+  comment       String?                 @db.Text
+  createdAt     DateTime                @default(now()) @map("created_at")
 
-  application Application @relation(fields: [applicationId], references: [id])
-  listing     Listing     @relation(fields: [listingId], references: [id])
-  owner       Profile     @relation("OwnerContracts", fields: [ownerId], references: [id])
-  tenant      Profile     @relation("TenantContracts", fields: [tenantId], references: [id])
-  payments    Payment[]
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
 
   @@index([applicationId])
-  @@map("contracts")
+  @@index([status])
+  @@map("application_documents")
 }
 
-// Payment Model (Stripe Payments)
+enum ApplicationDocumentType {
+  ID
+  NIE_TIE
+  EMPLOYMENT_CONTRACT
+  BANK_STATEMENT
+  TAX_RETURN
+  PAYSLIP
+  OTHER
+}
+
+model TenantScoring {
+  id                   String      @id @default(uuid())
+  applicationId        String      @unique @map("application_id")
+  totalScore           Decimal     @map("total_score") @db.Decimal(5, 2)
+  incomeScore          Decimal     @map("income_score") @db.Decimal(5, 2)
+  employmentScore      Decimal     @map("employment_score") @db.Decimal(5, 2)
+  rentalHistoryScore   Decimal     @map("rental_history_score") @db.Decimal(5, 2)
+  verificationScore    Decimal     @map("verification_score") @db.Decimal(5, 2)
+  criteriaMatchScore   Decimal     @map("criteria_match_score") @db.Decimal(5, 2)
+  riskLevel            RiskLevel   @map("risk_level")
+  calculatedAt         DateTime    @map("calculated_at")
+  notes                String?     @db.Text
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+
+  @@index([applicationId])
+  @@map("tenant_scorings")
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+}
+
+// ============================================================================
+// MEETING MODELS
+// ============================================================================
+
+model Meeting {
+  id              String       @id @default(uuid())
+  type            MeetingType
+  propertyId      String?      @map("property_id")
+  applicationId   String?      @map("application_id")
+  listingId       String?      @map("listing_id")
+  ownerId         String       @map("owner_id")
+  tenantId        String?      @map("tenant_id")
+  scheduledAt     DateTime     @map("scheduled_at")
+  durationMinutes Int          @map("duration_minutes")
+  location        String?
+  isOnline        Boolean      @default(false) @map("is_online")
+  meetingLink     String?      @map("meeting_link")
+  status          MeetingStatus @default(SCHEDULED)
+  notes           String?      @db.Text
+  outcome         String?      @db.Text
+  createdAt       DateTime     @default(now()) @map("created_at")
+  updatedAt       DateTime     @updatedAt @map("updated_at")
+
+  property    Property?      @relation(fields: [propertyId], references: [id], onDelete: SetNull)
+  application Application?   @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+  owner       OwnerProfile   @relation("OwnerMeetings", fields: [ownerId], references: [id], onDelete: Cascade)
+  tenant      TenantProfile? @relation("TenantMeetings", fields: [tenantId], references: [id], onDelete: SetNull)
+  keyHandovers KeyHandover[]
+
+  @@index([propertyId])
+  @@index([applicationId])
+  @@index([ownerId])
+  @@index([tenantId])
+  @@index([scheduledAt])
+  @@map("meetings")
+}
+
+enum MeetingType {
+  NOGENCY_CONSULTATION
+  PROPERTY_VIEWING
+  CONTRACT_SIGNING
+  KEY_HANDOVER
+}
+
+enum MeetingStatus {
+  SCHEDULED
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  NO_SHOW
+}
+
+// ============================================================================
+// LEASE CONTRACT MODELS
+// ============================================================================
+
+model LeaseContract {
+  id                        String                @id @default(uuid())
+  applicationId             String                @map("application_id")
+  listingId                 String                @map("listing_id")
+  propertyId                String                @map("property_id")
+  ownerId                   String                @map("owner_id")
+  tenantId                  String                @map("tenant_id")
+  contractNumber            String                @unique @map("contract_number")
+  startDate                 DateTime              @map("start_date") @db.Date
+  endDate                   DateTime              @map("end_date") @db.Date
+  monthlyRent               Decimal               @map("monthly_rent") @db.Decimal(10, 2)
+  depositAmount             Decimal               @map("deposit_amount") @db.Decimal(10, 2)
+  depositMonths             Int                   @map("deposit_months")
+  additionalGuaranteeMonths Int                   @default(0) @map("additional_guarantee_months")
+  paymentDueDay             Int                   @map("payment_due_day")
+  utilitiesResponsibility   UtilitiesResponsibility @map("utilities_responsibility")
+  sublettingAllowed         Boolean               @default(false) @map("subletting_allowed")
+  status                    ContractStatus        @default(DRAFT)
+  docusignEnvelopeId        String?               @map("docusign_envelope_id")
+  ownerSignedAt             DateTime?             @map("owner_signed_at")
+  tenantSignedAt            DateTime?             @map("tenant_signed_at")
+  documentUrl               String?               @map("document_url")
+  createdAt                 DateTime              @default(now()) @map("created_at")
+  updatedAt                 DateTime              @updatedAt @map("updated_at")
+
+  application   Application        @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  listing       Listing            @relation(fields: [listingId], references: [id], onDelete: Cascade)
+  owner         OwnerProfile       @relation("OwnerContracts", fields: [ownerId], references: [id], onDelete: Cascade)
+  tenant        TenantProfile      @relation("TenantContracts", fields: [tenantId], references: [id], onDelete: Cascade)
+  events        LeaseEvent[]
+  payments      Payment[]
+  depositRecord DepositRecord?
+  commission    CommissionRecord?
+  keyHandovers  KeyHandover[]
+  conversations Conversation[]
+
+  @@index([applicationId])
+  @@index([listingId])
+  @@index([ownerId])
+  @@index([tenantId])
+  @@index([status])
+  @@map("lease_contracts")
+}
+
+enum UtilitiesResponsibility {
+  OWNER
+  TENANT
+  SHARED
+}
+
+enum ContractStatus {
+  DRAFT
+  PENDING_SIGNATURES
+  ACTIVE
+  TERMINATED
+  EXPIRED
+}
+
+model LeaseEvent {
+  id          String          @id @default(uuid())
+  contractId  String          @map("contract_id")
+  type        LeaseEventType
+  timestamp   DateTime        @default(now())
+  triggeredBy String?         @map("triggered_by")
+  data        Json?
+
+  contract LeaseContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@index([contractId])
+  @@index([timestamp])
+  @@map("lease_events")
+}
+
+enum LeaseEventType {
+  CONTRACT_CREATED
+  CONTRACT_SENT
+  SIGNED_OWNER
+  SIGNED_TENANT
+  ACTIVE
+  KEYS_HANDED_OVER
+  PAYMENT_RECEIVED
+  TERMINATED
+  RENEWED
+}
+
+// ============================================================================
+// PAYMENT MODELS
+// ============================================================================
+
 model Payment {
-  id                    String    @id @default(uuid())
-  contractId            String?   @map("contract_id")
-  tenantId              String    @map("tenant_id")
-  stripePaymentIntentId String?   @unique @map("stripe_payment_intent_id")
-  amount                Decimal   @db.Decimal(10, 2)
-  status                String?
-  type                  String?
-  createdAt             DateTime  @default(now()) @map("created_at")
-  paidAt                DateTime? @map("paid_at")
+  id            String        @id @default(uuid())
+  contractId    String        @map("contract_id")
+  tenantId      String        @map("tenant_id")
+  ownerId       String        @map("owner_id")
+  type          PaymentType
+  amount        Decimal       @db.Decimal(10, 2)
+  currency      String        @default("EUR")
+  status        PaymentStatus @default(PENDING)
+  dueDate       DateTime      @map("due_date") @db.Date
+  paidAt        DateTime?     @map("paid_at")
+  paymentMethod PaymentMethod? @map("payment_method")
+  transactionId String?       @map("transaction_id")
+  periodStart   DateTime?     @map("period_start") @db.Date
+  periodEnd     DateTime?     @map("period_end") @db.Date
+  createdAt     DateTime      @default(now()) @map("created_at")
 
-  contract Contract? @relation(fields: [contractId], references: [id])
-  tenant   Profile   @relation(fields: [tenantId], references: [id])
+  contract LeaseContract  @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  tenant   TenantProfile  @relation("TenantPayments", fields: [tenantId], references: [id], onDelete: Cascade)
+  owner    OwnerProfile   @relation("OwnerPayments", fields: [ownerId], references: [id], onDelete: Cascade)
 
+  @@index([contractId])
+  @@index([tenantId])
+  @@index([ownerId])
+  @@index([status])
+  @@index([dueDate])
   @@map("payments")
+}
+
+enum PaymentType {
+  DEPOSIT
+  ADDITIONAL_GUARANTEE
+  RENT
+  SERVICE_FEE
+  PENALTY
+  REFUND
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  CARD
+  BANK_TRANSFER
+  BIZUM
+  OTHER
+}
+
+model DepositRecord {
+  id                        String   @id @default(uuid())
+  contractId                String   @unique @map("contract_id")
+  totalAmount               Decimal  @map("total_amount") @db.Decimal(10, 2)
+  legalDepositAmount        Decimal  @map("legal_deposit_amount") @db.Decimal(10, 2)
+  additionalGuaranteeAmount Decimal  @map("additional_guarantee_amount") @db.Decimal(10, 2)
+  depositedToAuthority      Boolean  @default(false) @map("deposited_to_authority")
+  authorityName             String?  @map("authority_name")
+  depositDate               DateTime? @map("deposit_date") @db.Date
+  authorityDocumentUrl      String?  @map("authority_document_url")
+  createdAt                 DateTime @default(now()) @map("created_at")
+
+  contract LeaseContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+
+  @@index([contractId])
+  @@map("deposit_records")
+}
+
+model CommissionRecord {
+  id         String            @id @default(uuid())
+  contractId String            @unique @map("contract_id")
+  ownerId    String            @map("owner_id")
+  amount     Decimal           @db.Decimal(10, 2)
+  status     CommissionStatus  @default(EXPECTED)
+  createdAt  DateTime          @default(now()) @map("created_at")
+  updatedAt  DateTime          @updatedAt @map("updated_at")
+
+  contract LeaseContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  owner    OwnerProfile   @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+
+  @@index([contractId])
+  @@index([ownerId])
+  @@map("commission_records")
+}
+
+enum CommissionStatus {
+  EXPECTED
+  CHARGED
+  PAID_OUT
+}
+
+model KeyHandover {
+  id                     String          @id @default(uuid())
+  contractId             String          @map("contract_id")
+  meetingId              String          @map("meeting_id")
+  keysCount              Int             @map("keys_count")
+  keysDescription        String          @map("keys_description")
+  handoverDate           DateTime        @map("handover_date")
+  handoverType           HandoverType    @map("handover_type")
+  propertyConditionNotes String?         @map("property_condition_notes") @db.Text
+  photos                 String[]
+  ownerConfirmed         Boolean         @default(false) @map("owner_confirmed")
+  tenantConfirmed        Boolean         @default(false) @map("tenant_confirmed")
+  createdAt              DateTime        @default(now()) @map("created_at")
+
+  contract LeaseContract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+  meeting  Meeting        @relation(fields: [meetingId], references: [id], onDelete: Cascade)
+
+  @@index([contractId])
+  @@index([meetingId])
+  @@map("key_handovers")
+}
+
+enum HandoverType {
+  MOVE_IN
+  MOVE_OUT
+}
+
+// ============================================================================
+// CONVERSATION & MESSAGING MODELS
+// ============================================================================
+
+model Conversation {
+  id              String            @id @default(uuid())
+  type            ConversationType
+  listingId       String?           @map("listing_id")
+  applicationId   String?           @map("application_id")
+  contractId      String?           @map("contract_id")
+  channel         ApplicationSource
+  status          ConversationStatus @default(ACTIVE)
+  lastMessageAt   DateTime?         @map("last_message_at")
+  createdAt       DateTime          @default(now()) @map("created_at")
+  updatedAt       DateTime          @updatedAt @map("updated_at")
+
+  listing      Listing?             @relation(fields: [listingId], references: [id], onDelete: SetNull)
+  application  Application?         @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+  contract     LeaseContract?       @relation(fields: [contractId], references: [id], onDelete: SetNull)
+  messages     Message[]
+  participants ConversationParticipant[]
+
+  @@index([listingId])
+  @@index([applicationId])
+  @@index([contractId])
+  @@map("conversations")
+}
+
+enum ConversationType {
+  LISTING_INQUIRY
+  APPLICATION_CHAT
+  LEASE_SUPPORT
+  GENERAL_SUPPORT
+}
+
+enum ConversationStatus {
+  ACTIVE
+  ARCHIVED
+}
+
+model ConversationParticipant {
+  id             String   @id @default(uuid())
+  conversationId String   @map("conversation_id")
+  userId         String   @map("user_id")
+  joinedAt       DateTime @default(now()) @map("joined_at")
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  user         User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([conversationId, userId])
+  @@index([conversationId])
+  @@index([userId])
+  @@map("conversation_participants")
+}
+
+model Message {
+  id             String      @id @default(uuid())
+  conversationId String      @map("conversation_id")
+  senderId       String      @map("sender_id")
+  senderType     SenderType  @map("sender_type")
+  content        String      @db.Text
+  attachments    Json?
+  isRead         Boolean     @default(false) @map("is_read")
+  readAt         DateTime?   @map("read_at")
+  sentAt         DateTime    @default(now()) @map("sent_at")
+
+  conversation Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  sender       User         @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId])
+  @@index([senderId])
+  @@index([sentAt])
+  @@map("messages")
+}
+
+enum SenderType {
+  USER
+  AGENT
+  AI
+  SYSTEM
+}
+
+// ============================================================================
+// NOTIFICATION MODEL
+// ============================================================================
+
+model Notification {
+  id          String             @id @default(uuid())
+  userId      String             @map("user_id")
+  type        NotificationType
+  channel     NotificationChannel
+  title       String
+  body        String             @db.Text
+  data        Json?
+  status      NotificationStatus @default(PENDING)
+  scheduledAt DateTime?          @map("scheduled_at")
+  sentAt      DateTime?          @map("sent_at")
+  readAt      DateTime?          @map("read_at")
+  createdAt   DateTime           @default(now()) @map("created_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([scheduledAt])
+  @@map("notifications")
+}
+
+enum NotificationType {
+  VIEWING_REMINDER
+  PAYMENT_DUE
+  PAYMENT_RECEIVED
+  APPLICATION_UPDATE
+  APPLICATION_RECEIVED
+  CONTRACT_READY
+  CONTRACT_SIGNED
+  NEW_MESSAGE
+  DOCUMENT_VERIFIED
+  DOCUMENT_REJECTED
+  KEYS_HANDOVER_SCHEDULED
+}
+
+enum NotificationChannel {
+  PUSH
+  SMS
+  EMAIL
+  WHATSAPP
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+  READ
 }
