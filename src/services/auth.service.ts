@@ -1,5 +1,5 @@
 import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
+import jwt, { SignOptions } from 'jsonwebtoken';
 import { prisma } from '../db/client.js';
 import { config } from '../config.js';
 import { RegisterInput } from '../schemas/auth.schema.js';
@@ -25,7 +25,9 @@ export class AuthService {
    * Generate JWT token
    */
   static generateToken(userId: string): string {
-    return jwt.sign({ userId }, config.jwt.secret, { expiresIn: config.jwt.expiresIn });
+    return jwt.sign({ userId }, config.jwt.secret, {
+      expiresIn: config.jwt.expiresIn,
+    } as SignOptions);
   }
 
   /**
