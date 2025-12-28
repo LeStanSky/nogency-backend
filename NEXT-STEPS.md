@@ -1,472 +1,672 @@
 # Дальнейшие шаги разработки (TDD подход)
 
-## Текущий статус проекта
+## ✅ Текущий статус проекта (Updated: 2025-12-28)
 
-Проект успешно инициализирован и настроен:
-- Node.js + TypeScript ✅
-- Fastify framework ✅
-- Prisma ORM ✅
-- Vitest для TDD ✅
-- Git репозиторий ✅
-- Структура проекта ✅
-- Health check endpoint ✅
-- Root endpoint (/) и /health работают ✅
+### Инфраструктура
 
-## Что делать дальше? Два варианта
+- [x] Node.js + TypeScript ✅
+- [x] Fastify framework ✅
+- [x] Prisma ORM ✅
+- [x] Vitest для TDD ✅
+- [x] Git репозиторий ✅
+- [x] ESLint (Google Style) + Prettier ✅
+- [x] Git hooks (Husky + lint-staged) ✅
+- [x] Структура проекта ✅
+- [x] Health check endpoint ✅
 
-### Вариант 1: Сначала настроить Supabase (рекомендуется для production)
+### База данных
 
-**Преимущества:**
-- Сразу работаем с реальной PostgreSQL базой
-- Настроим Prisma миграции
-- Не нужны будет моки для БД
-- Supabase Auth + Storage готовы к использованию
+- [x] **Supabase проект создан и подключен** ✅
+- [x] **Полная Prisma схема реализована (26 сущностей)** ✅
+- [x] Все таблицы созданы в PostgreSQL ✅
+- [x] Prisma Client сгенерирован ✅
+- [x] Prisma Studio доступен (http://localhost:5556) ✅
 
-**Шаги:**
+### API Endpoints
 
-1. **Создать Supabase проект:**
-   - Зайти на https://supabase.com
-   - Зарегистрироваться / войти
-   - Создать новый проект (выбрать регион, придумать пароль)
-   - Дождаться создания проекта (~2 минуты)
+- [x] **Authentication API полностью реализован** ✅
+  - [x] POST /api/v1/auth/register (регистрация)
+  - [x] POST /api/v1/auth/login (вход с JWT)
+  - [x] GET /api/v1/auth/me (текущий пользователь, protected)
+  - [x] Auth middleware для защиты роутов
+  - [x] 10 тестов покрывают все сценарии
+  - [x] Coverage: >93% для auth модулей
 
-2. **Скопировать credentials:**
-   ```bash
-   # В Supabase Dashboard → Settings → API
-   # Скопировать:
-   # - Project URL → SUPABASE_URL
-   # - anon/public key → SUPABASE_ANON_KEY
-   # - service_role key → SUPABASE_SERVICE_KEY
+### Dependencies установлены
 
-   # В Supabase Dashboard → Settings → Database
-   # Скопировать Connection String (URI) → DATABASE_URL
-   ```
-
-3. **Настроить .env файл:**
-   ```bash
-   cp .env.example .env
-   # Заполнить переменные из Supabase
-   ```
-
-4. **Применить Prisma миграции:**
-   ```bash
-   npm run db:migrate    # Создать и применить миграции
-   npm run db:generate   # Генерировать Prisma Client
-   npm run db:studio     # Открыть GUI для просмотра БД
-   ```
-
-5. **Настроить Supabase Storage:**
-   - В Supabase Dashboard → Storage
-   - Создать bucket "documents" (private)
-   - Создать bucket "listings" (public)
-
-6. **Начать TDD для Authentication API** (см. раздел ниже)
+- [x] bcryptjs (password hashing)
+- [x] jsonwebtoken (JWT tokens)
+- [x] zod (validation schemas)
+- [x] @supabase/supabase-js (Supabase client)
 
 ---
 
-### Вариант 2: Начать сразу с TDD (быстрый старт, моки для БД)
+## 📊 Database Schema Overview
 
-**Преимущества:**
-- Можно сразу писать код и тесты
-- Не нужно регистрироваться в Supabase прямо сейчас
-- Работаем с моками, подключим БД позже
-- Быстрее начать разработку
+**26 моделей успешно созданы:**
 
-**Шаги:**
+### Core User Models
 
-1. **Написать failing тест для `POST /api/v1/auth/register`:**
-   ```bash
-   # Создадим файл tests/auth.test.ts
-   # Напишем первый Red тест
-   ```
+- User (auth credentials)
+- UserRole (многие роли на пользователя)
+- OwnerProfile (владельцы)
+- TenantProfile (арендаторы)
 
-2. **Настроить роуты и контроллеры:**
+### Property Models
+
+- Property (недвижимость)
+- PropertyPhoto (фотографии)
+- PropertyDocument (документы: NOTA_SIMPLE, ESCRITURA, IBI, etc.)
+- PropertyValuation (оценка стоимости)
+
+### Listing Models
+
+- Listing (объявления)
+- ViewingSlot (слоты для показов)
+
+### Application Models
+
+- Application (заявки арендаторов)
+- ApplicationDocument (документы заявок)
+- TenantScoring (AI-скоринг арендаторов)
+
+### Meeting & Contract Models
+
+- Meeting (встречи, показы, подписание)
+- LeaseContract (договоры аренды)
+- LeaseEvent (история контракта)
+- DepositRecord (депозиты)
+- CommissionRecord (комиссии)
+- KeyHandover (передача ключей)
+
+### Payment Models
+
+- Payment (все типы платежей)
+
+### Communication Models
+
+- Conversation (чаты)
+- ConversationParticipant (участники)
+- Message (сообщения)
+
+### Notification Model
+
+- Notification (push, sms, email, whatsapp)
+
+---
+
+## 🎯 Следующие шаги разработки
+
+### Week 1-2: Owner/Tenant Profiles + Document Upload
+
+#### Day 3-4: Profile Management API
+
+**Endpoints для реализации:**
+
+1. **POST /api/v1/profiles/owner** - Создать профиль владельца
+
    ```typescript
-   // src/routes/auth.routes.ts
-   // src/controllers/auth.controller.ts
-   // src/services/auth.service.ts (с моками БД)
+   // TDD: tests/profiles.test.ts
+   // Schema: src/schemas/profile.schema.ts
+   // Service: src/services/profile.service.ts
+   // Controller: src/controllers/profile.controller.ts
    ```
 
-3. **Реализовать базовую логику:**
-   - Validation с Zod
-   - Password hashing
-   - JWT токены
-   - Mock для Prisma Client
+2. **POST /api/v1/profiles/tenant** - Создать профиль арендатора
 
-4. **Покрыть тестами:**
-   - Registration
-   - Login
-   - Auth middleware
-   - Validation errors
+3. **GET /api/v1/profiles/me** - Получить свой профиль (owner или tenant)
 
-5. **Когда будет готов Supabase - заменить моки на реальную БД**
+4. **PATCH /api/v1/profiles/me** - Обновить профиль
 
-**Что будем использовать как mock:**
-```typescript
-// Временный in-memory storage для users
-const users: Map<string, User> = new Map();
+**TDD Workflow:**
 
-// Позже заменим на:
-await prisma.profile.create({ data: ... })
+```bash
+# 1. Red Phase
+npm test -- profiles.test.ts --run  # Should fail
+
+# 2. Green Phase
+# Implement service, controller, routes
+
+# 3. Verify
+npm test -- profiles.test.ts --run  # Should pass
+npm run test:coverage              # Check coverage >80%
 ```
+
+**Acceptance Criteria:**
+
+- [ ] Тесты написаны ДО реализации
+- [ ] POST /profiles/owner создает OwnerProfile + UserRole
+- [ ] POST /profiles/tenant создает TenantProfile + UserRole
+- [ ] GET /profiles/me возвращает правильный профиль
+- [ ] Validation с Zod для всех полей
+- [ ] Coverage > 80%
+- [ ] Git commit: "feat: implement profile management API"
 
 ---
 
-### Мой совет: Какой вариант выбрать?
+#### Day 5-7: Document Upload API + Supabase Storage
 
-**Если хотите быстро начать кодить →** Вариант 2
-- Сразу пишем тесты и код
-- Supabase подключим через 1-2 дня когда будет нужен
+**Настроить Supabase Storage:**
 
-**Если хотите сразу production-ready setup →** Вариант 1
-- Настроим всё сразу правильно
-- Не нужно будет переделывать моки
+1. В Supabase Dashboard → Storage
+2. Создать bucket "documents" (private)
+3. Создать bucket "property-photos" (public)
+4. Настроить RLS policies
 
----
+**Endpoints для реализации:**
 
-## Day 1-2: Authentication API (Следующий шаг)
+1. **POST /api/v1/documents** - Upload document
 
-### Подготовка
-
-1. **Создать Supabase проект**
-   ```bash
-   # Зарегистрироваться на https://supabase.com
-   # Создать новый проект
-   # Скопировать credentials в .env файл
+   ```typescript
+   // Multipart file upload
+   // Upload to Supabase Storage
+   // Save metadata to PropertyDocument or ApplicationDocument
    ```
 
-2. **Применить Prisma миграции**
-   ```bash
-   npm run db:migrate
-   npm run db:generate
+2. **GET /api/v1/documents** - List user documents
+
+   ```typescript
+   // Row-level security: только свои документы
    ```
 
-### TDD Workflow для Authentication
+3. **GET /api/v1/documents/:id** - Get document details
 
-#### 1. Registration Endpoint (POST /api/v1/auth/register)
+4. **DELETE /api/v1/documents/:id** - Delete document
 
-**Red Phase - Написать failing тест:**
+**Implementation:**
+
 ```typescript
-// tests/auth.test.ts
+// src/services/storage.service.ts
+import { createClient } from '@supabase/supabase-js';
 
-describe('POST /api/v1/auth/register', () => {
-  it('should register a new user', async () => {
-    const response = await app.inject({
-      method: 'POST',
-      url: '/api/v1/auth/register',
-      payload: {
-        email: 'test@example.com',
-        password: 'SecurePass123!',
-        fullName: 'Test User',
-        role: 'TENANT',
-      },
-    });
+export class StorageService {
+  static async uploadFile(bucket: string, path: string, file: Buffer) {
+    // Upload to Supabase Storage
+  }
 
-    expect(response.statusCode).toBe(201);
-    const body = JSON.parse(response.body);
-    expect(body).toHaveProperty('token');
-    expect(body.user).toHaveProperty('email', 'test@example.com');
-  });
+  static async deleteFile(bucket: string, path: string) {
+    // Delete from Supabase Storage
+  }
 
-  it('should return 400 for invalid email', async () => {
-    // Test validation
-  });
-
-  it('should return 409 if email already exists', async () => {
-    // Test duplicate email
-  });
-});
-```
-
-**Green Phase - Минимальная реализация:**
-```typescript
-// src/routes/auth.routes.ts
-// src/controllers/auth.controller.ts
-// src/services/auth.service.ts
-```
-
-**Refactor Phase:**
-- Улучшить структуру кода
-- Добавить validation с Zod
-- Добавить proper error handling
-
-#### 2. Login Endpoint (POST /api/v1/auth/login)
-
-**Red Phase - Написать тест:**
-```typescript
-describe('POST /api/v1/auth/login', () => {
-  it('should login existing user', async () => {
-    // Test successful login
-  });
-
-  it('should return 401 for invalid credentials', async () => {
-    // Test wrong password
-  });
-});
-```
-
-**Green Phase - Реализация:**
-- JWT token generation
-- Password hashing (bcrypt)
-- Auth service
-
-#### 3. Auth Middleware
-
-**Red Phase - Написать тест:**
-```typescript
-describe('Auth Middleware', () => {
-  it('should allow access with valid token', async () => {
-    // Test protected route with valid JWT
-  });
-
-  it('should return 401 without token', async () => {
-    // Test protected route without token
-  });
-});
-```
-
-**Green Phase - Реализация:**
-```typescript
-// src/middleware/auth.middleware.ts
-```
-
-### Чеклист Day 1-2
-
-- [ ] Создать Supabase проект и настроить .env
-- [ ] Применить Prisma миграции (npm run db:migrate)
-- [ ] Написать тест для POST /auth/register
-- [ ] Реализовать registration controller
-- [ ] Написать тест для POST /auth/login
-- [ ] Реализовать login controller + JWT
-- [ ] Написать тест для auth middleware
-- [ ] Реализовать auth middleware
-- [ ] Написать тест для GET /auth/me
-- [ ] Реализовать me endpoint
-- [ ] Все тесты проходят ✅
-- [ ] Coverage > 80% ✅
-- [ ] Git commit: "feat: implement authentication API"
-
-## Day 3-4: Document Upload API
-
-### TDD для Document Upload
-
-#### 1. Upload Document (POST /api/v1/documents)
-
-**Red Phase - Тест:**
-```typescript
-describe('POST /api/v1/documents', () => {
-  it('should upload document to Supabase Storage', async () => {
-    const form = new FormData();
-    form.append('file', fileBuffer, 'dni.pdf');
-    form.append('type', 'DNI');
-
-    const response = await app.inject({
-      method: 'POST',
-      url: '/api/v1/documents',
-      headers: {
-        authorization: `Bearer ${token}`,
-        ...form.getHeaders(),
-      },
-      payload: form,
-    });
-
-    expect(response.statusCode).toBe(201);
-    expect(body.data).toHaveProperty('fileUrl');
-  });
-});
-```
-
-**Green Phase - Реализация:**
-```typescript
-// src/services/storage.service.ts - Supabase Storage integration
-// src/controllers/documents.controller.ts
-// src/middleware/upload.middleware.ts
-```
-
-#### 2. List Documents (GET /api/v1/documents)
-
-**Red Phase - Тест:**
-```typescript
-describe('GET /api/v1/documents', () => {
-  it('should return user documents only', async () => {
-    // Test row-level security
-  });
-});
-```
-
-### Чеклист Day 3-4
-
-- [ ] Настроить Supabase Storage bucket
-- [ ] Написать тест для upload endpoint
-- [ ] Реализовать storage.service.ts
-- [ ] Написать тест для list documents
-- [ ] Реализовать documents.controller.ts
-- [ ] Написать тест для delete document
-- [ ] Реализовать DELETE endpoint
-- [ ] Все тесты проходят ✅
-- [ ] Git commit: "feat: implement document upload API"
-
-## Day 5-7: Documents CRUD
-
-- [ ] GET /api/v1/documents - список документов
-- [ ] GET /api/v1/documents/:id - детали документа
-- [ ] DELETE /api/v1/documents/:id - удаление
-- [ ] Row-level security middleware
-- [ ] Git commit: "feat: implement documents CRUD API"
-
-## Day 8-10: AI Document Verification
-
-### Интеграция Claude API
-
-**Red Phase - Тест с mock:**
-```typescript
-describe('POST /api/v1/documents/:id/verify', () => {
-  it('should verify DNI document with AI', async () => {
-    // Mock Anthropic SDK response
-    const response = await app.inject({
-      method: 'POST',
-      url: `/api/v1/documents/${documentId}/verify`,
-      headers: { authorization: `Bearer ${token}` },
-    });
-
-    expect(response.statusCode).toBe(200);
-    expect(body.data.verificationData).toHaveProperty('fullName');
-    expect(body.data.verificationData).toHaveProperty('documentNumber');
-  });
-});
-```
-
-**Green Phase - Реализация:**
-```typescript
-// src/services/ai.service.ts
-import Anthropic from '@anthropic-ai/sdk';
-
-class AIService {
-  async verifyDocument(imageUrl: string, type: string) {
-    // Claude Vision API integration
+  static getPublicUrl(bucket: string, path: string) {
+    // Get public URL
   }
 }
 ```
 
-### Чеклист Day 8-10
-
-- [ ] Написать тест для AI verification (с mock)
-- [ ] Реализовать ai.service.ts
-- [ ] Интеграция с Claude Vision API
-- [ ] Парсинг AI response
-- [ ] Сохранение verificationData в DB
-- [ ] Все тесты проходят ✅
-- [ ] Git commit: "feat: implement AI document verification"
-
-## Day 11-14: Listings CRUD
-
-### Endpoints для листингов
-
-- [ ] POST /api/v1/listings - создание листинга
-- [ ] GET /api/v1/listings - список всех active листингов
-- [ ] GET /api/v1/listings/:id - детали листинга
-- [ ] GET /api/v1/owner/listings - листинги владельца
-- [ ] PATCH /api/v1/listings/:id - обновление
-- [ ] DELETE /api/v1/listings/:id - удаление
-- [ ] Upload фото листингов (multipart)
-- [ ] Git commit: "feat: implement listings CRUD API"
-
-## Week 3-4: Applications & AI Scoring
-
-- [ ] POST /api/v1/applications - подать заявку
-- [ ] GET /api/v1/applications - список заявок
-- [ ] POST /api/v1/applications/:id/score - AI скоринг
-- [ ] Интеграция Claude для tenant scoring
-- [ ] Git commit: "feat: implement tenant applications & AI scoring"
-
-## Week 5-6: Contracts & Payments
-
-- [ ] POST /api/v1/contracts - создание контракта
-- [ ] GET /api/v1/contracts/:id/pdf - генерация PDF
-- [ ] POST /api/v1/payments/create-intent - Stripe integration
-- [ ] POST /api/v1/payments/webhook - Stripe webhooks
-- [ ] Git commit: "feat: implement contracts and payments"
-
-## Советы по TDD разработке
-
-### 1. Always Red → Green → Refactor
-- Никогда не пишите код до теста
-- Пишите минимальный код для прохождения теста
-- Рефакторите только после green
-
-### 2. Один тест за раз
-```bash
-npm test -- auth.test.ts  # Запустить только auth тесты
-```
-
-### 3. Используйте watch mode
-```bash
-npm test  # Auto-rerun on changes
-```
-
-### 4. Commit часто
-```bash
-git add .
-git commit -m "test: add registration validation tests"
-# ... implement
-git commit -m "feat: implement user registration"
-```
-
-### 5. Mock внешние сервисы
-- Anthropic API → Mock responses
-- Supabase Storage → Mock file upload
-- Stripe → Mock webhooks
-
-### 6. Coverage как metric
-```bash
-npm run test:coverage
-# Цель: >80% coverage
-```
-
-## Полезные команды
+**TDD Workflow:**
 
 ```bash
-# Development
-npm run dev              # Start dev server
-npm test                 # Run tests in watch mode
-npm run test:ui          # Visual test runner
+# 1. Write tests with file mocks
+# tests/documents.test.ts
 
-# Database
-npm run db:studio        # Open Prisma Studio
-npm run db:migrate       # Create migration
-npm run db:push          # Quick schema push
+# 2. Implement upload logic
+# src/services/storage.service.ts
+# src/controllers/documents.controller.ts
 
-# Git
-git status               # Check changes
-git log --oneline -5     # Recent commits
-
-# Versioning
-npm run release:patch    # 1.0.0 → 1.0.1
-npm run release:minor    # 1.0.0 → 1.1.0
-npm run release:major    # 1.0.0 → 2.0.0
+# 3. Test with real Supabase
+npm test -- documents.test.ts --run
 ```
 
-## Критерии готовности (Definition of Done)
+**Acceptance Criteria:**
 
-Для каждой фичи:
-- [ ] Тесты написаны ДО реализации
-- [ ] Все тесты проходят (green)
+- [ ] Supabase Storage buckets созданы
+- [ ] POST /documents загружает файл в Supabase
+- [ ] GET /documents возвращает только документы пользователя
+- [ ] DELETE /documents удаляет из Storage + DB
+- [ ] Validation типов файлов (PDF, JPG, PNG)
+- [ ] Max file size 10MB
 - [ ] Coverage > 80%
-- [ ] Код отформатирован (npm run format)
-- [ ] Нет eslint ошибок (npm run lint)
-- [ ] Git commit сделан
-- [ ] README обновлен (если нужно)
+- [ ] Git commit: "feat: implement document upload with Supabase Storage"
 
-## Следующий immediate шаг
+---
 
-**Создайте Supabase проект и начните с Authentication API (Day 1-2)**
+### Week 2: AI Document Verification (Claude Vision API)
 
-1. Зайти на https://supabase.com и создать проект
-2. Скопировать credentials в .env файл
-3. Запустить `npm run db:migrate`
-4. Открыть `tests/auth.test.ts` - написать первый тест
-5. Запустить `npm test` - увидеть red
-6. Реализовать минимальный код - сделать green
-7. Refactor и commit
+#### Day 8-10: AI Integration
 
-Успехов! 🚀
+**Endpoint:**
+
+**POST /api/v1/documents/:id/verify** - AI verification
+
+```typescript
+// src/services/ai.service.ts
+import Anthropic from '@anthropic-ai/sdk';
+
+export class AIService {
+  static async verifyDocument(documentUrl: string, documentType: string) {
+    const client = new Anthropic({
+      apiKey: config.anthropic.apiKey,
+    });
+
+    const response = await client.messages.create({
+      model: 'claude-3-5-sonnet-20241022',
+      max_tokens: 1024,
+      messages: [
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'image',
+              source: {
+                type: 'url',
+                url: documentUrl,
+              },
+            },
+            {
+              type: 'text',
+              text: `Extract information from this ${documentType} document.`,
+            },
+          ],
+        },
+      ],
+    });
+
+    // Parse and return structured data
+  }
+}
+```
+
+**Что извлекать из документов:**
+
+- **DNI/NIE/TIE:**
+  - Full Name
+  - Document Number
+  - Date of Birth
+  - Expiration Date
+  - Nationality
+
+- **Payslip:**
+  - Employer Name
+  - Monthly Gross Income
+  - Monthly Net Income
+  - Employment Status
+
+- **Bank Statement:**
+  - Account Balance
+  - Monthly Income
+  - Transaction History
+
+**TDD Workflow:**
+
+```bash
+# 1. Mock Claude API responses
+# tests/ai.test.ts
+
+# 2. Implement AI service
+# src/services/ai.service.ts
+
+# 3. Test with real documents
+npm test -- ai.test.ts --run
+```
+
+**Acceptance Criteria:**
+
+- [ ] POST /documents/:id/verify вызывает Claude API
+- [ ] Извлекает structured data из DNI/NIE
+- [ ] Сохраняет verificationData в DB
+- [ ] Обновляет status документа (PENDING → VERIFIED)
+- [ ] Mock тесты для AI responses
+- [ ] Coverage > 80%
+- [ ] Git commit: "feat: implement AI document verification with Claude"
+
+---
+
+### Week 3-4: Property & Listing Management
+
+#### Property CRUD API
+
+**Endpoints:**
+
+1. **POST /api/v1/properties** - Create property
+2. **GET /api/v1/properties** - List owner's properties
+3. **GET /api/v1/properties/:id** - Get property details
+4. **PATCH /api/v1/properties/:id** - Update property
+5. **DELETE /api/v1/properties/:id** - Delete property
+6. **POST /api/v1/properties/:id/photos** - Upload photos
+7. **DELETE /api/v1/properties/:id/photos/:photoId** - Delete photo
+
+#### Listing CRUD API
+
+**Endpoints:**
+
+1. **POST /api/v1/listings** - Create listing from property
+2. **GET /api/v1/listings** - List active listings (public)
+3. **GET /api/v1/listings/:id** - Get listing details
+4. **PATCH /api/v1/listings/:id** - Update listing
+5. **DELETE /api/v1/listings/:id** - Archive listing
+6. **POST /api/v1/listings/:id/publish** - Publish listing
+7. **POST /api/v1/listings/:id/pause** - Pause listing
+
+**Acceptance Criteria:**
+
+- [ ] Property CRUD полностью реализован
+- [ ] Listing CRUD полностью реализован
+- [ ] Owner может создать property с photos
+- [ ] Property → Listing workflow
+- [ ] Публичный endpoint для активных listings
+- [ ] Coverage > 80%
+- [ ] Git commit: "feat: implement property and listing management"
+
+---
+
+### Week 3-4: Tenant Applications & AI Scoring
+
+#### Application API
+
+**Endpoints:**
+
+1. **POST /api/v1/applications** - Submit application
+2. **GET /api/v1/applications** - List applications (filtered by role)
+3. **GET /api/v1/applications/:id** - Get application details
+4. **PATCH /api/v1/applications/:id/status** - Update status
+5. **POST /api/v1/applications/:id/score** - Calculate AI score
+
+**AI Scoring Logic:**
+
+```typescript
+// src/services/scoring.service.ts
+
+export class ScoringService {
+  static async calculateScore(applicationId: string) {
+    const application = await prisma.application.findUnique({
+      where: { id: applicationId },
+      include: {
+        tenant: true,
+        documents: true,
+        listing: {
+          include: { preferredTenantCriteria: true },
+        },
+      },
+    });
+
+    // 1. Income Score (0-100)
+    const incomeScore = this.calculateIncomeScore(
+      application.tenant.monthlyIncome,
+      application.listing.monthlyRent
+    );
+
+    // 2. Employment Score (0-100)
+    const employmentScore = this.calculateEmploymentScore(
+      application.tenant.occupation,
+      application.documents
+    );
+
+    // 3. Rental History Score (0-100)
+    // 4. Verification Score (0-100)
+    // 5. Criteria Match Score (0-100)
+
+    const totalScore =
+      (incomeScore +
+        employmentScore +
+        rentalHistoryScore +
+        verificationScore +
+        criteriaMatchScore) /
+      5;
+
+    // Save to TenantScoring
+    await prisma.tenantScoring.create({
+      data: {
+        applicationId,
+        totalScore,
+        incomeScore,
+        employmentScore,
+        rentalHistoryScore,
+        verificationScore,
+        criteriaMatchScore,
+        riskLevel: this.calculateRiskLevel(totalScore),
+        calculatedAt: new Date(),
+      },
+    });
+  }
+}
+```
+
+**Acceptance Criteria:**
+
+- [ ] Tenant может подать заявку на listing
+- [ ] Owner видит все заявки на свои listings
+- [ ] AI scoring рассчитывает 5 метрик
+- [ ] TenantScoring сохраняется в DB
+- [ ] Risk Level определяется (LOW/MEDIUM/HIGH)
+- [ ] Coverage > 80%
+- [ ] Git commit: "feat: implement tenant applications and AI scoring"
+
+---
+
+### Week 5-6: Contracts & Payments
+
+#### Contract API
+
+**Endpoints:**
+
+1. **POST /api/v1/contracts** - Create contract from application
+2. **GET /api/v1/contracts/:id** - Get contract details
+3. **POST /api/v1/contracts/:id/sign** - Sign contract (owner/tenant)
+4. **GET /api/v1/contracts/:id/pdf** - Generate PDF contract
+
+#### Payment API (Stripe Integration)
+
+**Endpoints:**
+
+1. **POST /api/v1/payments/create-intent** - Create Stripe payment intent
+2. **POST /api/v1/payments/webhook** - Handle Stripe webhooks
+3. **GET /api/v1/payments** - List payments for contract
+
+**Stripe Setup:**
+
+```typescript
+// src/services/payment.service.ts
+import Stripe from 'stripe';
+
+const stripe = new Stripe(config.stripe.secretKey);
+
+export class PaymentService {
+  static async createPaymentIntent(contractId: string, amount: number) {
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: amount * 100, // Convert to cents
+      currency: 'eur',
+      metadata: { contractId },
+    });
+
+    await prisma.payment.create({
+      data: {
+        contractId,
+        tenantId,
+        ownerId,
+        type: 'DEPOSIT',
+        amount,
+        transactionId: paymentIntent.id,
+        status: 'PENDING',
+      },
+    });
+
+    return paymentIntent;
+  }
+
+  static async handleWebhook(event: Stripe.Event) {
+    // Handle payment_intent.succeeded
+    // Update payment status in DB
+  }
+}
+```
+
+**Acceptance Criteria:**
+
+- [ ] Contract создается из approved application
+- [ ] Owner и tenant могут подписать контракт
+- [ ] PDF generation для контракта
+- [ ] Stripe payment intent создается
+- [ ] Webhook обрабатывает успешные платежи
+- [ ] Payment статусы обновляются
+- [ ] Coverage > 80%
+- [ ] Git commit: "feat: implement contracts and payments with Stripe"
+
+---
+
+## 📝 TDD Checklist (для каждой фичи)
+
+Перед началом работы над новой фичей:
+
+- [ ] **Red Phase:** Написать failing тесты
+
+  ```bash
+  npm test -- feature.test.ts --run  # Should FAIL
+  ```
+
+- [ ] **Green Phase:** Реализовать минимальный код
+  - Создать Zod schemas (validation)
+  - Реализовать service (business logic)
+  - Реализовать controller (HTTP handlers)
+  - Создать routes
+  - Зарегистрировать в app.ts
+
+- [ ] **Verify:** Запустить тесты
+
+  ```bash
+  npm test -- feature.test.ts --run  # Should PASS
+  ```
+
+- [ ] **Refactor:** Улучшить код
+  - Убрать дублирование
+  - Улучшить читаемость
+  - Добавить error handling
+
+- [ ] **Coverage:** Проверить покрытие
+
+  ```bash
+  npm run test:coverage  # Should be >80%
+  ```
+
+- [ ] **Lint & Format:**
+
+  ```bash
+  npm run lint
+  npm run format
+  ```
+
+- [ ] **Commit:**
+  ```bash
+  git add .
+  git commit -m "feat: implement feature X"
+  ```
+
+---
+
+## 🔧 Полезные команды
+
+### Development
+
+```bash
+npm run dev              # Start dev server (port 8000)
+npm test                 # Run tests in watch mode
+npm run test:ui          # Vitest UI
+npm run test:coverage    # Coverage report
+```
+
+### Database
+
+```bash
+npm run db:push          # Quick schema sync (dev)
+npm run db:migrate       # Create migration (prod)
+npm run db:generate      # Generate Prisma Client
+npm run db:studio        # Open Prisma Studio (http://localhost:5556)
+```
+
+### Code Quality
+
+```bash
+npm run lint             # ESLint check
+npm run lint -- --fix    # Auto-fix errors
+npm run format           # Prettier format
+```
+
+### Git
+
+```bash
+git status
+git add .
+git commit -m "feat: description"
+git push
+```
+
+---
+
+## 📊 Coverage Goals
+
+**Минимальные требования:**
+
+- Overall: >80%
+- Services: >90%
+- Controllers: >85%
+- Routes: 100%
+
+**Текущий статус:**
+
+- Overall: 79.52%
+- Auth Services: 98.81% ✅
+- Auth Controllers: 69.91%
+- Auth Routes: 100% ✅
+
+---
+
+## 🎯 Definition of Done
+
+Фича считается завершенной когда:
+
+- [x] Тесты написаны ДО реализации (TDD)
+- [x] Все тесты проходят (Green)
+- [x] Coverage > 80%
+- [x] ESLint warnings исправлены
+- [x] Code отформатирован (Prettier)
+- [x] Git commit создан
+- [x] NEXT-STEPS.md обновлен
+
+---
+
+## 🚀 Quick Start для следующей фичи
+
+**Пример: Profile Management API**
+
+```bash
+# 1. Создать файл теста
+touch tests/profiles.test.ts
+
+# 2. Написать failing тест
+npm test -- profiles.test.ts --run  # RED
+
+# 3. Создать необходимые файлы
+touch src/schemas/profile.schema.ts
+touch src/services/profile.service.ts
+touch src/controllers/profile.controller.ts
+touch src/routes/profile.routes.ts
+
+# 4. Реализовать код
+# ... implement ...
+
+# 5. Запустить тесты
+npm test -- profiles.test.ts --run  # GREEN
+
+# 6. Проверить coverage
+npm run test:coverage
+
+# 7. Commit
+git add .
+git commit -m "feat: implement profile management API"
+```
+
+---
+
+## 📚 Дополнительные ресурсы
+
+- **Prisma Docs:** https://www.prisma.io/docs
+- **Fastify Docs:** https://fastify.dev/docs
+- **Vitest Docs:** https://vitest.dev
+- **Zod Docs:** https://zod.dev
+- **Supabase Docs:** https://supabase.com/docs
+- **Anthropic Claude API:** https://docs.anthropic.com/claude/reference
+
+---
+
+**Last Updated:** 2025-12-28
+**Next Milestone:** Profile Management API (Day 3-4)

@@ -2,6 +2,7 @@ import Fastify, { FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
 import { config } from './config.js';
+import authRoutes from './routes/auth.routes.js';
 
 export const createApp = async (): Promise<FastifyInstance> => {
   const app = Fastify({
@@ -42,8 +43,8 @@ export const createApp = async (): Promise<FastifyInstance> => {
     return { status: 'ok', timestamp: new Date().toISOString() };
   });
 
-  // API routes will be registered here
-  // await app.register(routes, { prefix: '/api/v1' });
+  // API routes
+  await app.register(authRoutes, { prefix: '/api/v1/auth' });
 
   return app;
 };
