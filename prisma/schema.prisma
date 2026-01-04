@@ -29,6 +29,7 @@ model User {
   roles              UserRole[]
   ownerProfile       OwnerProfile?
   tenantProfile      TenantProfile?
+  documents          Document[]
   notifications      Notification[]
   sentMessages       Message[]
   conversationParticipants ConversationParticipant[]
@@ -54,6 +55,29 @@ enum Role {
   TENANT
   AGENT
   ADMIN
+}
+
+// ============================================================================
+// DOCUMENT MODEL (User Documents)
+// ============================================================================
+
+model Document {
+  id        String   @id @default(uuid())
+  userId    String   @map("user_id")
+  type      String   // "ID", "NIE_TIE", "BANK_STATEMENT", "EMPLOYMENT_CONTRACT", "PAYSLIP", "OTHER"
+  fileName  String   @map("file_name")
+  fileUrl   String   @map("file_url")
+  mimeType  String   @map("mime_type")
+  fileSize  Int      @map("file_size")
+  status    String   @default("PENDING") // "PENDING", "VERIFIED", "REJECTED"
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@map("documents")
 }
 
 // ============================================================================

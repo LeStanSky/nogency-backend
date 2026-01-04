@@ -4,6 +4,7 @@ import multipart from '@fastify/multipart';
 import { config } from './config.js';
 import authRoutes from './routes/auth.routes.js';
 import profileRoutes from './routes/profile.routes.js';
+import documentsRoutes from './routes/documents.routes.js';
 
 export const createApp = async (): Promise<FastifyInstance> => {
   const app = Fastify({
@@ -47,6 +48,7 @@ export const createApp = async (): Promise<FastifyInstance> => {
   // API routes
   await app.register(authRoutes, { prefix: '/api/v1/auth' });
   await app.register(profileRoutes, { prefix: '/api/v1/profiles' });
+  await app.register(documentsRoutes, { prefix: '/api/v1/documents' });
 
   return app;
 };
