@@ -1,4 +1,5 @@
 import { randomUUID } from 'crypto';
+import { supabaseAdmin } from '../db/client.js';
 
 export class StorageService {
   private static readonly BUCKET_NAME = 'documents';
@@ -9,30 +10,32 @@ export class StorageService {
   static async uploadFile(
     userId: string,
     fileName: string,
-    _fileBuffer: Buffer,
-    _mimeType: string
+    fileBuffer: Buffer,
+    mimeType: string
   ): Promise<string> {
     try {
       // Generate unique file path
       const fileExtension = fileName.split('.').pop();
       const uniqueFileName = `${userId}/${randomUUID()}.${fileExtension}`;
 
-      // For MVP: Return a mock URL
-      // TODO: Implement actual Supabase Storage upload
-      // const { data, error } = await supabase.storage
-      //   .from(this.BUCKET_NAME)
-      //   .upload(uniqueFileName, fileBuffer, {
-      //     contentType: mimeType,
-      //     upsert: false,
-      //   });
+      // Upload to Supabase Storage
+      const { data, error } = await supabaseAdmin.storage
+        .from(this.BUCKET_NAME)
+        .upload(uniqueFileName, fileBuffer, {
+          contentType: mimeType,
+          upsert: false,
+        });
 
-      // if (error) {
-      //   throw new Error(`Storage upload failed: ${error.message}`);
-      // }
+      if (error) {
+        throw new Error(`Storage upload failed: ${error.message}`);
+      }
 
-      // For now, return a mock URL
-      const mockUrl = `https://example.com/storage/${uniqueFileName}`;
-      return mockUrl;
+      // Get public URL
+      const { data: urlData } = supabaseAdmin.storage
+        .from(this.BUCKET_NAME)
+        .getPublicUrl(data.path);
+
+      return urlData.publicUrl;
     } catch (error) {
       throw new Error(
         `Failed to upload file: ${error instanceof Error ? error.message : 'Unknown error'}`
@@ -43,20 +46,25 @@ export class StorageService {
   /**
    * Delete file from Supabase Storage
    */
-  static async deleteFile(_fileUrl: string): Promise<void> {
+  static async deleteFile(fileUrl: string): Promise<void> {
     try {
       // Extract file path from URL
-      // For MVP: Just return success
-      // TODO: Implement actual Supabase Storage delete
-      // const filePath = this.extractFilePathFromUrl(fileUrl);
-      // const { error } = await supabase.storage
-      //   .from(this.BUCKET_NAME)
-      //   .remove([filePath]);
-      // if (error) {
-      //   throw new Error(`Storage delete failed: ${error.message}`);
-      // }
+      const filePath = this.extractFilePathFromUrl(fileUrl);
+
+      if (!filePath) {
+        // If path extraction fails, don't throw error (file might not exist)
+        return;
+      }
+
+      const { error } = await supabaseAdmin.storage.from(this.BUCKET_NAME).remove([filePath]);
+
+      if (error) {
+        // Log error but don't throw - file might already be deleted
+        console.warn(`Storage delete warning: ${error.message}`);
+      }
     } catch (error) {
-      throw new Error(
+      // Log error but don't throw - allow deletion to continue
+      console.warn(
         `Failed to delete file: ${error instanceof Error ? error.message : 'Unknown error'}`
       );
     }
@@ -66,20 +74,23 @@ export class StorageService {
    * Get public URL for a file
    */
   static getPublicUrl(filePath: string): string {
-    // TODO: Implement actual Supabase Storage public URL
-    // const { data } = supabase.storage
-    //   .from(this.BUCKET_NAME)
-    //   .getPublicUrl(filePath);
-    // return data.publicUrl;
+    const { data } = supabaseAdmin.storage.from(this.BUCKET_NAME).getPublicUrl(filePath);
 
-    return `https://example.com/storage/${filePath}`;
+    return data.publicUrl;
   }
 
   /**
    * Extract file path from storage URL
    */
   private static extractFilePathFromUrl(url: string): string {
-    const parts = url.split('/storage/');
-    return parts[1] || '';
+    try {
+      const urlObj = new URL(url);
+      const pathParts = urlObj.pathname.split(`/storage/v1/object/public/${this.BUCKET_NAME}/`);
+      return pathParts[1] || '';
+    } catch {
+      // Fallback for non-URL format
+      const parts = url.split('/storage/');
+      return parts[1] || '';
+    }
   }
 }

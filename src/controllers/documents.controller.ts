@@ -12,20 +12,29 @@ export class DocumentsController {
       const userId = request.userId!;
       const body = request.body as any;
 
-      // Calculate file size from buffer
-      let fileSize = 0;
+      // Convert serialized Buffer to actual Buffer if needed
+      let fileBuffer: Buffer;
       if (Buffer.isBuffer(body.file)) {
-        fileSize = body.file.length;
+        fileBuffer = body.file;
       } else if (body.file?.type === 'Buffer' && Array.isArray(body.file?.data)) {
-        // Handle serialized Buffer object
-        fileSize = body.file.data.length;
-      } else if (body.file?.byteLength) {
-        fileSize = body.file.byteLength;
+        // Handle serialized Buffer object from tests
+        fileBuffer = Buffer.from(body.file.data);
+      } else if (body.file) {
+        // Try to convert to Buffer
+        fileBuffer = Buffer.from(body.file);
+      } else {
+        return reply.code(400).send({
+          error: 'File is required',
+        });
       }
+
+      // Calculate file size from buffer
+      const fileSize = fileBuffer.length;
 
       // Validate input
       const validatedData = uploadDocumentSchema.parse({
         ...body,
+        file: fileBuffer,
         fileSize,
       });
 
