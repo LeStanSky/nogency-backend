@@ -521,6 +521,236 @@ export class PaymentService {
 
 ---
 
+### Week 7-8: Plaid Integration (Income & Identity Verification)
+
+**Цель:** Интеграция с Plaid для автоматизации верификации доходов и улучшения tenant scoring
+
+#### Plaid Setup & Income Verification
+
+**Установка:**
+
+```bash
+npm install plaid
+```
+
+**Endpoints для реализации:**
+
+1. **POST /api/v1/plaid/link-token** - Create Plaid Link token
+
+   ```typescript
+   // Frontend использует этот token для Plaid Link UI
+   // Позволяет пользователю подключить банковский счет
+   ```
+
+2. **POST /api/v1/plaid/exchange-token** - Exchange public_token for access_token
+
+   ```typescript
+   // После успешного подключения банка в Plaid Link
+   // Сохраняет access_token в DB для будущих запросов
+   ```
+
+3. **GET /api/v1/plaid/income** - Get income verification report
+
+   ```typescript
+   // Получает Bank Income report от Plaid
+   // Возвращает: net income, income sources, stability metrics
+   ```
+
+4. **GET /api/v1/plaid/transactions** - Get user transactions
+
+   ```typescript
+   // Получает историю транзакций за последние 12 месяцев
+   // Для анализа финансового поведения
+   ```
+
+**Implementation:**
+
+```typescript
+// src/services/plaid.service.ts
+import { Configuration, PlaidApi, PlaidEnvironments } from 'plaid';
+
+export class PlaidService {
+  private static client = new PlaidApi(
+    new Configuration({
+      basePath: PlaidEnvironments.sandbox, // или production
+      baseOptions: {
+        headers: {
+          'PLAID-CLIENT-ID': config.plaid.clientId,
+          'PLAID-SECRET': config.plaid.secret,
+        },
+      },
+    })
+  );
+
+  static async createLinkToken(userId: string) {
+    const response = await this.client.linkTokenCreate({
+      user: { client_user_id: userId },
+      client_name: 'NoGency AI',
+      products: ['auth', 'income', 'transactions'],
+      country_codes: ['US', 'ES', 'GB'], // Поддерживаемые страны
+      language: 'es',
+    });
+    return response.data.link_token;
+  }
+
+  static async exchangePublicToken(publicToken: string) {
+    const response = await this.client.itemPublicTokenExchange({
+      public_token: publicToken,
+    });
+    return response.data.access_token;
+  }
+
+  static async getIncome(accessToken: string) {
+    const response = await this.client.incomeGet({
+      access_token: accessToken,
+    });
+    return response.data;
+  }
+
+  static async getTransactions(accessToken: string, startDate: string, endDate: string) {
+    const response = await this.client.transactionsGet({
+      access_token: accessToken,
+      start_date: startDate,
+      end_date: endDate,
+    });
+    return response.data;
+  }
+}
+```
+
+**Database Schema Updates:**
+
+```prisma
+// Добавить в TenantProfile:
+model TenantProfile {
+  // ... existing fields
+  plaidAccessToken    String?  @map("plaid_access_token") // Encrypted!
+  plaidItemId         String?  @map("plaid_item_id")
+  plaidIncomeVerified Boolean  @default(false) @map("plaid_income_verified")
+  plaidLastSync       DateTime? @map("plaid_last_sync")
+}
+```
+
+**Enhanced AI Scoring with Plaid:**
+
+```typescript
+// src/services/scoring.service.ts - ENHANCED VERSION
+
+export class ScoringService {
+  static async calculateScore(applicationId: string) {
+    const application = await prisma.application.findUnique({
+      where: { id: applicationId },
+      include: {
+        tenant: true,
+        documents: true,
+        listing: true,
+      },
+    });
+
+    // 1. Income Score - ENHANCED with Plaid
+    let incomeScore = 0;
+    if (application.tenant.plaidIncomeVerified) {
+      // Используем verified Plaid income (более надежно)
+      const plaidIncome = await PlaidService.getIncome(application.tenant.plaidAccessToken!);
+      const monthlyIncome = plaidIncome.income.streams[0].monthly_income;
+      incomeScore = this.calculateIncomeScore(monthlyIncome, application.listing.monthlyRent);
+    } else {
+      // Fallback: используем данные из документов (Claude AI)
+      incomeScore = this.calculateIncomeScore(
+        application.tenant.monthlyIncome,
+        application.listing.monthlyRent
+      );
+    }
+
+    // 2. Financial Stability Score - NEW with Plaid Transactions
+    let financialStabilityScore = 0;
+    if (application.tenant.plaidAccessToken) {
+      const transactions = await PlaidService.getTransactions(
+        application.tenant.plaidAccessToken
+        /* last 12 months */
+      );
+      financialStabilityScore = this.analyzeFinancialStability(transactions);
+    }
+
+    // 3. Employment Score
+    const employmentScore = this.calculateEmploymentScore(/*...*/);
+
+    // 4. Verification Score
+    const verificationScore = this.calculateVerificationScore(/*...*/);
+
+    // 5. Criteria Match Score
+    const criteriaMatchScore = this.calculateCriteriaMatch(/*...*/);
+
+    // TOTAL SCORE with Plaid boost
+    const totalScore =
+      (incomeScore +
+        employmentScore +
+        verificationScore +
+        criteriaMatchScore +
+        financialStabilityScore) /
+      5;
+
+    // Save with new fields
+    await prisma.tenantScoring.create({
+      data: {
+        applicationId,
+        totalScore,
+        incomeScore,
+        employmentScore,
+        verificationScore,
+        criteriaMatchScore,
+        financialStabilityScore, // NEW
+        riskLevel: this.calculateRiskLevel(totalScore),
+        calculatedAt: new Date(),
+      },
+    });
+  }
+
+  // NEW: Analyze financial stability from transactions
+  static analyzeFinancialStability(transactions: any): number {
+    // 1. Income regularity (регулярность зарплаты)
+    // 2. Savings pattern (есть ли накопления?)
+    // 3. Overdrafts / NSF fees (овердрафты = bad)
+    // 4. Spending pattern (стабильность расходов)
+    // Return score 0-100
+  }
+}
+```
+
+**Acceptance Criteria:**
+
+- [ ] Plaid SDK установлен и настроен
+- [ ] POST /plaid/link-token создает Link token
+- [ ] POST /plaid/exchange-token обменивает токены
+- [ ] GET /plaid/income получает income report
+- [ ] GET /plaid/transactions получает транзакции
+- [ ] TenantProfile хранит Plaid access_token (encrypted)
+- [ ] ScoringService использует Plaid income для расчета
+- [ ] FinancialStabilityScore добавлен в TenantScoring
+- [ ] Frontend Plaid Link компонент интегрирован
+- [ ] Тесты покрывают Plaid integration (mocked)
+- [ ] Coverage > 80%
+- [ ] Git commit: "feat: integrate Plaid for income verification and enhanced scoring"
+
+**Security Notes:**
+
+- ⚠️ Plaid access_token должен быть зашифрован в БД
+- ⚠️ Использовать environment variables для Plaid credentials
+- ⚠️ Проверить географические ограничения для Spain/EU
+- ⚠️ Рассмотреть регистрацию UK entity для доступа к Plaid
+
+**Optional: Plaid Identity Verification**
+
+Если нужна дополнительная верификация документов:
+
+```typescript
+// POST /api/v1/plaid/identity-verification/create
+// Webhook: /api/v1/plaid/webhooks/identity
+// Стоимость: ~$0.70-1.50 за проверку
+```
+
+---
+
 ## 📝 TDD Checklist (для каждой фичи)
 
 Перед началом работы над новой фичей:
