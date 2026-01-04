@@ -36,9 +36,8 @@ pnpm-debug.log*
 lerna-debug.log*
 
 # Prisma
-prisma/migrations/
-!prisma/migrations/.gitkeep
 # Prisma generates client in node_modules/.prisma (covered by node_modules/)
+# Note: Migrations should be committed to version control for production use
 
 # Misc
 .cache/
