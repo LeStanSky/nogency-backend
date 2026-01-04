@@ -1,6 +1,6 @@
 # Дальнейшие шаги разработки (TDD подход)
 
-## ✅ Текущий статус проекта (Updated: 2025-12-28)
+## ✅ Текущий статус проекта (Updated: 2026-01-04)
 
 ### Инфраструктура
 
@@ -30,7 +30,15 @@
   - [x] GET /api/v1/auth/me (текущий пользователь, protected)
   - [x] Auth middleware для защиты роутов
   - [x] 10 тестов покрывают все сценарии
-  - [x] Coverage: >93% для auth модулей
+  - [x] Coverage: >93% для auth модулов
+
+- [x] **Profile Management API полностью реализован** ✅
+  - [x] POST /api/v1/profiles/owner (создание профиля владельца)
+  - [x] POST /api/v1/profiles/tenant (создание профиля арендатора)
+  - [x] GET /api/v1/profiles/me (получение профиля)
+  - [x] PATCH /api/v1/profiles/me (обновление профиля)
+  - [x] 18 тестов покрывают все сценарии
+  - [x] Coverage: 84.42% overall (exceeds 80% target)
 
 ### Dependencies установлены
 
@@ -134,13 +142,13 @@ npm run test:coverage              # Check coverage >80%
 
 **Acceptance Criteria:**
 
-- [ ] Тесты написаны ДО реализации
-- [ ] POST /profiles/owner создает OwnerProfile + UserRole
-- [ ] POST /profiles/tenant создает TenantProfile + UserRole
-- [ ] GET /profiles/me возвращает правильный профиль
-- [ ] Validation с Zod для всех полей
-- [ ] Coverage > 80%
-- [ ] Git commit: "feat: implement profile management API"
+- [x] Тесты написаны ДО реализации ✅
+- [x] POST /profiles/owner создает OwnerProfile + UserRole ✅
+- [x] POST /profiles/tenant создает TenantProfile + UserRole ✅
+- [x] GET /profiles/me возвращает правильный профиль ✅
+- [x] Validation с Zod для всех полей ✅
+- [x] Coverage > 80% (84.42%) ✅
+- [x] Git commit: "feat: implement profile management API" ✅
 
 ---
 
@@ -603,10 +611,10 @@ git push
 
 **Текущий статус:**
 
-- Overall: 79.52%
-- Auth Services: 98.81% ✅
-- Auth Controllers: 69.91%
-- Auth Routes: 100% ✅
+- Overall: 84.42% ✅
+- Services: 97.27% ✅
+- Controllers: 72.11%
+- Routes: 100% ✅
 
 ---
 
@@ -668,5 +676,5 @@ git commit -m "feat: implement profile management API"
 
 ---
 
-**Last Updated:** 2025-12-28
-**Next Milestone:** Profile Management API (Day 3-4)
+**Last Updated:** 2026-01-04
+**Next Milestone:** Document Upload API + Supabase Storage (Day 5-7)

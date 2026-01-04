@@ -2,7 +2,7 @@
 
 Backend API для платформы управления арендой недвижимости с AI-скорингом арендаторов.
 
-**Статус:** 🚀 Authentication API реализован | Database полностью настроена
+**Статус:** 🚀 Authentication & Profile Management APIs реализованы | Database полностью настроена
 
 ## Технологический стек
 
@@ -18,7 +18,7 @@ Backend API для платформы управления арендой нед
 - **File Storage:** Supabase Storage
 - **Authentication:** JWT + bcrypt
 
-## ✅ Реализованные функции (Updated: 2025-12-28)
+## ✅ Реализованные функции (Updated: 2026-01-04)
 
 ### Infrastructure
 
@@ -40,6 +40,17 @@ Backend API для платформы управления арендой нед
 - [x] Password hashing (bcryptjs)
 - [x] Zod validation schemas
 - [x] 10 comprehensive tests (>93% coverage)
+
+#### Profile Management API ✅
+
+- [x] `POST /api/v1/profiles/owner` - Create owner profile with auto-role
+- [x] `POST /api/v1/profiles/tenant` - Create tenant profile with auto-role
+- [x] `GET /api/v1/profiles/me` - Get user profile (owner or tenant)
+- [x] `PATCH /api/v1/profiles/me` - Update profile (partial updates)
+- [x] Type-safe Zod validation matching Prisma schema
+- [x] Decimal/Date conversions for tenant profiles
+- [x] 18 comprehensive tests (100% passing)
+- [x] 84.42% overall coverage
 
 ### Database Schema (26 Models)
 
@@ -77,25 +88,31 @@ Backend API для платформы управления арендой нед
 nogency-back/
 ├── src/
 │   ├── routes/          # API маршруты
-│   │   └── auth.routes.ts        ✅ Implemented
+│   │   ├── auth.routes.ts        ✅ Implemented
+│   │   └── profile.routes.ts     ✅ Implemented
 │   ├── controllers/     # Контроллеры бизнес-логики
-│   │   └── auth.controller.ts    ✅ Implemented
+│   │   ├── auth.controller.ts    ✅ Implemented
+│   │   └── profile.controller.ts ✅ Implemented
 │   ├── services/        # Сервисы (AI, Storage, Email, Auth)
-│   │   └── auth.service.ts       ✅ Implemented
+│   │   ├── auth.service.ts       ✅ Implemented
+│   │   └── profile.service.ts    ✅ Implemented
 │   ├── middleware/      # Middleware (auth, validation)
 │   │   └── auth.middleware.ts    ✅ Implemented
 │   ├── schemas/         # Zod validation schemas
-│   │   └── auth.schema.ts        ✅ Implemented
+│   │   ├── auth.schema.ts        ✅ Implemented
+│   │   └── profile.schema.ts     ✅ Implemented
 │   ├── db/              # Database client
 │   │   └── client.ts             ✅ Implemented
 │   ├── types/           # TypeScript типы
+│   │   └── fastify.d.ts          ✅ Implemented
 │   ├── utils/           # Утилиты
 │   ├── config.ts        # Конфигурация приложения
 │   ├── app.ts           # Fastify приложение
 │   └── index.ts         # Точка входа
 ├── tests/               # Тесты (Vitest)
-│   ├── app.test.ts      # Health check tests
-│   └── auth.test.ts     # Auth API tests (10 tests) ✅
+│   ├── app.test.ts      # Health check tests (2 tests)
+│   ├── auth.test.ts     # Auth API tests (10 tests) ✅
+│   └── profiles.test.ts # Profile API tests (18 tests) ✅
 ├── prisma/              # Prisma schema и миграции
 │   └── schema.prisma    # Full schema (26 models) ✅
 ├── .env.example         # Пример переменных окружения
@@ -248,20 +265,64 @@ curl -X POST http://localhost:8000/api/v1/auth/register \
     "email": "user@example.com",
     "phone": null,
     "isEmailVerified": false,
-    "createdAt": "2025-12-28T..."
+    "createdAt": "2026-01-04T..."
   },
   "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
 }
 ```
 
+### ✅ Profile Management (Implemented)
+
+| Method | Endpoint                  | Description                | Auth Required |
+| ------ | ------------------------- | -------------------------- | ------------- |
+| POST   | `/api/v1/profiles/owner`  | Create owner profile       | Yes           |
+| POST   | `/api/v1/profiles/tenant` | Create tenant profile      | Yes           |
+| GET    | `/api/v1/profiles/me`     | Get current user's profile | Yes           |
+| PATCH  | `/api/v1/profiles/me`     | Update profile (partial)   | Yes           |
+
+**Example: Create Owner Profile**
+
+```bash
+curl -X POST http://localhost:8000/api/v1/profiles/owner \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
+  -d '{
+    "firstName": "John",
+    "lastName": "Doe",
+    "documentType": "DNI",
+    "documentNumber": "12345678A",
+    "bankAccountIban": "ES1234567890123456789012"
+  }'
+```
+
+**Example: Get Profile**
+
+```bash
+curl -X GET http://localhost:8000/api/v1/profiles/me \
+  -H "Authorization: Bearer YOUR_JWT_TOKEN"
+```
+
+**Response:**
+
+```json
+{
+  "type": "owner",
+  "profile": {
+    "id": "uuid",
+    "userId": "user-uuid",
+    "firstName": "John",
+    "lastName": "Doe",
+    "documentType": "DNI",
+    "documentNumber": "12345678A",
+    "isCompany": false,
+    "bankAccountIban": "ES1234567890123456789012",
+    "createdAt": "2026-01-04T...",
+    "updatedAt": "2026-01-04T..."
+  }
+}
+```
+
 ### 📝 Planned Endpoints
-
-#### Profile Management (Week 1-2)
-
-- `POST /api/v1/profiles/owner` - Create owner profile
-- `POST /api/v1/profiles/tenant` - Create tenant profile
-- `GET /api/v1/profiles/me` - Get user profile
-- `PATCH /api/v1/profiles/me` - Update profile
 
 #### Document Upload (Week 1-2)
 
@@ -365,33 +426,31 @@ git commit -m "feat: implement profile management API"
 
 **Текущий статус:**
 
-- Overall: 79.52%
-- Auth Services: 98.81% ✅
-- Auth Controllers: 69.91%
-- Auth Routes: 100% ✅
+- Overall: 84.42% ✅
+- Services: 97.27% ✅
+- Controllers: 72.11%
+- Routes: 100% ✅
 
 ## Следующие шаги разработки
 
-### Week 1-2: Profiles + Document Upload
+### Week 1-2: Document Upload & AI Verification
 
 **📝 Что делать дальше:**
 
-1. **Profile Management API** (Day 3-4)
-   - POST /profiles/owner
-   - POST /profiles/tenant
-   - GET /profiles/me
+1. **Document Upload API** (Day 5-7)
+   - Настроить Supabase Storage buckets
+   - POST /documents endpoint (multipart upload)
+   - GET /documents (list user documents)
+   - DELETE /documents/:id
+   - File validation (PDF, JPG, PNG, max 10MB)
    - TDD workflow
 
-2. **Document Upload** (Day 5-7)
-   - Настроить Supabase Storage buckets
-   - POST /documents endpoint
-   - GET /documents (list)
-   - DELETE /documents/:id
-
-3. **AI Document Verification** (Day 8-10)
+2. **AI Document Verification** (Day 8-10)
    - Интеграция Claude Vision API
    - POST /documents/:id/verify
-   - Extract data from DNI/NIE/TIE
+   - Extract structured data from DNI/NIE/TIE
+   - Update document verification status
+   - Save extracted data to database
 
 📖 Подробный план: [NEXT-STEPS.md](./NEXT-STEPS.md)
 
@@ -455,6 +514,6 @@ Stas - NoGency AI Team
 
 ---
 
-**Last Updated:** 2025-12-28
+**Last Updated:** 2026-01-04
 **Current Version:** 1.0.0
-**Status:** ✅ Authentication API Complete | 🚀 Ready for Profile Management
+**Status:** ✅ Authentication & Profile Management Complete | 🚀 Ready for Document Upload
