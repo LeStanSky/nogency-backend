@@ -15,6 +15,9 @@ export default async function documentsRoutes(app: FastifyInstance): Promise<voi
   // Get document by ID
   app.get('/:id', DocumentsController.getDocumentById);
 
+  // Verify document with AI
+  app.post('/:id/verify', DocumentsController.verifyDocument);
+
   // Delete document
   app.delete('/:id', DocumentsController.deleteDocument);
 }

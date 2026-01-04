@@ -62,16 +62,18 @@ enum Role {
 // ============================================================================
 
 model Document {
-  id        String   @id @default(uuid())
-  userId    String   @map("user_id")
-  type      String   // "ID", "NIE_TIE", "BANK_STATEMENT", "EMPLOYMENT_CONTRACT", "PAYSLIP", "OTHER"
-  fileName  String   @map("file_name")
-  fileUrl   String   @map("file_url")
-  mimeType  String   @map("mime_type")
-  fileSize  Int      @map("file_size")
-  status    String   @default("PENDING") // "PENDING", "VERIFIED", "REJECTED"
-  createdAt DateTime @default(now()) @map("created_at")
-  updatedAt DateTime @updatedAt @map("updated_at")
+  id               String   @id @default(uuid())
+  userId           String   @map("user_id")
+  type             String   // "ID", "NIE_TIE", "BANK_STATEMENT", "EMPLOYMENT_CONTRACT", "PAYSLIP", "OTHER"
+  fileName         String   @map("file_name")
+  fileUrl          String   @map("file_url")
+  mimeType         String   @map("mime_type")
+  fileSize         Int      @map("file_size")
+  status           String   @default("PENDING") // "PENDING", "VERIFIED", "REJECTED"
+  verificationData Json?    @map("verification_data") // AI-extracted data from document
+  verifiedAt       DateTime? @map("verified_at")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 

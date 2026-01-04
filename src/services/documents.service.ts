@@ -1,5 +1,6 @@
 import { prisma } from '../db/client.js';
 import { StorageService } from './storage.service.js';
+import { AIService } from './ai.service.js';
 import { UploadDocumentInput } from '../schemas/document.schema.js';
 
 export class DocumentsService {
@@ -114,6 +115,52 @@ export class DocumentsService {
           id: documentId,
         },
       });
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
+   * Verify a document using AI
+   */
+  static async verifyDocument(userId: string, documentId: string): Promise<any> {
+    try {
+      const document = await prisma.document.findUnique({
+        where: {
+          id: documentId,
+        },
+      });
+
+      if (!document) {
+        throw new Error('Document not found');
+      }
+
+      // Check ownership
+      if (document.userId !== userId) {
+        throw new Error('Forbidden: You do not own this document');
+      }
+
+      // Check if already verified
+      if (document.status === 'VERIFIED') {
+        throw new Error('Document is already verified');
+      }
+
+      // Call AI service to verify document
+      const verificationData = await AIService.verifyDocument(document.fileUrl, document.type);
+
+      // Update document with verification data
+      const updatedDocument = await prisma.document.update({
+        where: {
+          id: documentId,
+        },
+        data: {
+          status: 'VERIFIED',
+          verificationData,
+          verifiedAt: new Date(),
+        },
+      });
+
+      return updatedDocument;
     } catch (error) {
       throw error;
     }

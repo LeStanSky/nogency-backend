@@ -134,4 +134,38 @@ export class DocumentsController {
       });
     }
   }
+
+  /**
+   * Verify a document using AI
+   * POST /api/v1/documents/:id/verify
+   */
+  static async verifyDocument(
+    request: FastifyRequest<{ Params: { id: string } }>,
+    reply: FastifyReply
+  ): Promise<void> {
+    try {
+      const userId = request.userId!;
+      const { id } = request.params;
+
+      const document = await DocumentsService.verifyDocument(userId, id);
+
+      reply.code(200).send(document);
+    } catch (error: any) {
+      if (error.message === 'Document not found') {
+        return reply.code(404).send({ error: error.message });
+      }
+
+      if (error.message.includes('Forbidden')) {
+        return reply.code(403).send({ error: error.message });
+      }
+
+      if (error.message.includes('already verified')) {
+        return reply.code(400).send({ error: error.message });
+      }
+
+      reply.code(500).send({
+        error: error.message || 'Failed to verify document',
+      });
+    }
+  }
 }
