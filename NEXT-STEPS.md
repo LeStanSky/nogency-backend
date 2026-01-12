@@ -1,6 +1,6 @@
 # Дальнейшие шаги разработки (TDD подход)
 
-## ✅ Текущий статус проекта (Updated: 2026-01-04)
+## ✅ Текущий статус проекта (Updated: 2026-01-12)
 
 ### Инфраструктура
 
@@ -58,6 +58,48 @@
   - [x] verificationData JSON поле добавлено в Document model
   - [x] 8 тестов с mocked AI responses
   - [x] Coverage: 74.7% overall
+
+- [x] **Property CRUD API полностью реализован** ✅
+  - [x] POST /api/v1/properties (создание недвижимости)
+  - [x] GET /api/v1/properties (список недвижимости владельца)
+  - [x] GET /api/v1/properties/:id (получение деталей недвижимости)
+  - [x] PATCH /api/v1/properties/:id (обновление недвижимости)
+  - [x] DELETE /api/v1/properties/:id (удаление недвижимости)
+  - [x] POST /api/v1/properties/:id/photos (добавление фото)
+  - [x] DELETE /api/v1/properties/:id/photos/:photoId (удаление фото)
+  - [x] Zod validation для всех полей Property
+  - [x] Проверка владельца (только owner может CRUD)
+  - [x] 25 тестов покрывают все сценарии
+  - [x] Coverage: 77.17% overall
+
+- [x] **Listing CRUD API полностью реализован** ✅
+  - [x] POST /api/v1/listings (создание листинга)
+  - [x] GET /api/v1/listings (список листингов владельца)
+  - [x] GET /api/v1/listings/public (публичные активные листинги)
+  - [x] GET /api/v1/listings/:id (получение деталей листинга)
+  - [x] PATCH /api/v1/listings/:id (обновление листинга)
+  - [x] DELETE /api/v1/listings/:id (удаление листинга)
+  - [x] POST /api/v1/listings/:id/publish (публикация листинга)
+  - [x] POST /api/v1/listings/:id/pause (пауза листинга)
+  - [x] Zod validation для всех полей Listing
+  - [x] Проверка владельца (только owner может CRUD)
+  - [x] 20 тестов покрывают все сценарии
+  - [x] Coverage: 85.78% overall
+
+- [x] **Application & AI Scoring API полностью реализован** ✅
+  - [x] POST /api/v1/applications (подача заявки tenant)
+  - [x] GET /api/v1/applications (список заявок с фильтрацией по роли)
+  - [x] GET /api/v1/applications/:id (получение деталей заявки)
+  - [x] PATCH /api/v1/applications/:id/status (обновление статуса owner)
+  - [x] POST /api/v1/applications/:id/withdraw (отзыв заявки tenant)
+  - [x] POST /api/v1/applications/:id/score (AI scoring owner)
+  - [x] ScoringService с 5 метриками (income, employment, rental history, verification, criteria match)
+  - [x] Risk Level (LOW/MEDIUM/HIGH) автоматически определяется
+  - [x] Генерация рекомендаций для владельца
+  - [x] Проверка дубликатов заявок
+  - [x] Проверка статуса листинга (только ACTIVE)
+  - [x] 31 тест покрывает все сценарии
+  - [x] Coverage: 86.09% overall
 
 ### Dependencies установлены
 
@@ -367,13 +409,14 @@ npm test -- ai.test.ts --run
 
 **Acceptance Criteria:**
 
-- [ ] Property CRUD полностью реализован
-- [ ] Listing CRUD полностью реализован
-- [ ] Owner может создать property с photos
-- [ ] Property → Listing workflow
-- [ ] Публичный endpoint для активных listings
-- [ ] Coverage > 80%
-- [ ] Git commit: "feat: implement property and listing management"
+- [x] Property CRUD полностью реализован ✅
+- [x] Listing CRUD полностью реализован ✅
+- [x] Owner может создать property с photos ✅
+- [x] Property → Listing workflow ✅
+- [x] Публичный endpoint для активных listings ✅
+- [x] Coverage > 85% (текущий: 85.78%) ✅
+- [x] Git commit: "feat: implement property CRUD API" ✅
+- [x] Git commit: "feat: implement listing CRUD API" ✅
 
 ---
 
@@ -381,31 +424,178 @@ npm test -- ai.test.ts --run
 
 #### Application API
 
+**Файлы для создания:**
+
+```bash
+# TDD: сначала тесты
+touch tests/applications.test.ts
+
+# Затем реализация
+touch src/schemas/application.schema.ts
+touch src/services/application.service.ts
+touch src/services/scoring.service.ts
+touch src/controllers/application.controller.ts
+touch src/routes/application.routes.ts
+```
+
 **Endpoints:**
 
 1. **POST /api/v1/applications** - Submit application
-2. **GET /api/v1/applications** - List applications (filtered by role)
-3. **GET /api/v1/applications/:id** - Get application details
-4. **PATCH /api/v1/applications/:id/status** - Update status
-5. **POST /api/v1/applications/:id/score** - Calculate AI score
 
-**AI Scoring Logic:**
+   ```typescript
+   // Request body:
+   {
+     listingId: string;        // UUID листинга
+     message?: string;         // Сообщение для владельца
+     moveInDate: Date;         // Желаемая дата въезда
+     leaseDuration?: number;   // Срок аренды в месяцах
+   }
+
+   // Response:
+   {
+     id: string;
+     listingId: string;
+     tenantId: string;
+     status: 'PENDING';
+     message?: string;
+     moveInDate: Date;
+     leaseDuration?: number;
+     createdAt: Date;
+   }
+   ```
+
+2. **GET /api/v1/applications** - List applications (filtered by role)
+
+   ```typescript
+   // Для TENANT: возвращает свои заявки
+   // Для OWNER: возвращает заявки на свои листинги
+
+   // Query params:
+   ?status=PENDING|REVIEWING|APPROVED|REJECTED|WITHDRAWN
+   ?listingId=uuid  // Фильтр по листингу (только для owner)
+
+   // Response:
+   {
+     applications: Application[];
+     total: number;
+     page: number;
+     limit: number;
+   }
+   ```
+
+3. **GET /api/v1/applications/:id** - Get application details
+
+   ```typescript
+   // Response включает:
+   {
+     id: string;
+     listing: {
+       id: string;
+       title: string;
+       monthlyRent: number;
+       property: { address: string; }
+     };
+     tenant: {
+       id: string;
+       firstName: string;
+       lastName: string;
+       occupation?: string;
+       monthlyIncome?: number;
+     };
+     documents: ApplicationDocument[];
+     scoring?: TenantScoring;
+     status: ApplicationStatus;
+     createdAt: Date;
+     updatedAt: Date;
+   }
+   ```
+
+4. **PATCH /api/v1/applications/:id/status** - Update status (Owner only)
+
+   ```typescript
+   // Request body:
+   {
+     status: 'REVIEWING' | 'APPROVED' | 'REJECTED';
+     rejectionReason?: string;  // Required if status = REJECTED
+   }
+   ```
+
+5. **POST /api/v1/applications/:id/withdraw** - Withdraw application (Tenant only)
+
+   ```typescript
+   // Tenant может отозвать свою заявку
+   // Меняет status на WITHDRAWN
+   ```
+
+6. **POST /api/v1/applications/:id/documents** - Upload application document
+
+   ```typescript
+   // Multipart upload
+   // Привязывает документ к заявке (ApplicationDocument)
+   // Типы: PAYSLIP, BANK_STATEMENT, EMPLOYMENT_CONTRACT, REFERENCE_LETTER, etc.
+   ```
+
+7. **POST /api/v1/applications/:id/score** - Calculate AI score (Owner only)
+
+   ```typescript
+   // Триггерит AI scoring для заявки
+   // Анализирует все загруженные документы
+   // Создает TenantScoring запись
+   ```
+
+---
+
+#### AI Scoring Service
+
+**src/services/scoring.service.ts:**
 
 ```typescript
-// src/services/scoring.service.ts
+import { prisma } from '../db/client.js';
+import { AIService } from './ai.service.js';
+
+export type RiskLevel = 'LOW' | 'MEDIUM' | 'HIGH';
+
+interface ScoringResult {
+  totalScore: number;
+  incomeScore: number;
+  employmentScore: number;
+  rentalHistoryScore: number;
+  verificationScore: number;
+  criteriaMatchScore: number;
+  riskLevel: RiskLevel;
+  recommendations: string[];
+}
 
 export class ScoringService {
-  static async calculateScore(applicationId: string) {
+  /**
+   * Рассчитывает AI scoring для заявки
+   */
+  static async calculateScore(applicationId: string): Promise<ScoringResult> {
     const application = await prisma.application.findUnique({
       where: { id: applicationId },
       include: {
-        tenant: true,
-        documents: true,
+        tenant: {
+          include: {
+            user: true,
+            documents: {
+              where: { status: 'VERIFIED' },
+            },
+          },
+        },
+        documents: {
+          include: { document: true },
+        },
         listing: {
-          include: { preferredTenantCriteria: true },
+          include: {
+            property: true,
+          },
         },
       },
     });
+
+    if (!application) {
+      throw new Error('Application not found');
+    }
 
     // 1. Income Score (0-100)
     const incomeScore = this.calculateIncomeScore(
@@ -414,26 +604,49 @@ export class ScoringService {
     );
 
     // 2. Employment Score (0-100)
-    const employmentScore = this.calculateEmploymentScore(
-      application.tenant.occupation,
+    const employmentScore = await this.calculateEmploymentScore(
+      application.tenant,
       application.documents
     );
 
     // 3. Rental History Score (0-100)
-    // 4. Verification Score (0-100)
-    // 5. Criteria Match Score (0-100)
+    const rentalHistoryScore = this.calculateRentalHistoryScore(application.tenant);
 
-    const totalScore =
+    // 4. Verification Score (0-100)
+    const verificationScore = this.calculateVerificationScore(
+      application.tenant.documents,
+      application.documents
+    );
+
+    // 5. Criteria Match Score (0-100)
+    const criteriaMatchScore = this.calculateCriteriaMatchScore(
+      application.tenant,
+      application.listing
+    );
+
+    // Calculate total and risk level
+    const totalScore = Math.round(
       (incomeScore +
         employmentScore +
         rentalHistoryScore +
         verificationScore +
         criteriaMatchScore) /
-      5;
+        5
+    );
 
-    // Save to TenantScoring
-    await prisma.tenantScoring.create({
-      data: {
+    const riskLevel = this.calculateRiskLevel(totalScore);
+    const recommendations = this.generateRecommendations({
+      incomeScore,
+      employmentScore,
+      rentalHistoryScore,
+      verificationScore,
+      criteriaMatchScore,
+    });
+
+    // Save to database
+    await prisma.tenantScoring.upsert({
+      where: { applicationId },
+      create: {
         applicationId,
         totalScore,
         incomeScore,
@@ -441,23 +654,480 @@ export class ScoringService {
         rentalHistoryScore,
         verificationScore,
         criteriaMatchScore,
-        riskLevel: this.calculateRiskLevel(totalScore),
+        riskLevel,
+        recommendations,
+        calculatedAt: new Date(),
+      },
+      update: {
+        totalScore,
+        incomeScore,
+        employmentScore,
+        rentalHistoryScore,
+        verificationScore,
+        criteriaMatchScore,
+        riskLevel,
+        recommendations,
         calculatedAt: new Date(),
       },
     });
+
+    return {
+      totalScore,
+      incomeScore,
+      employmentScore,
+      rentalHistoryScore,
+      verificationScore,
+      criteriaMatchScore,
+      riskLevel,
+      recommendations,
+    };
+  }
+
+  /**
+   * Income Score: соотношение дохода к аренде
+   * Идеально: доход >= 3x аренды = 100 баллов
+   */
+  private static calculateIncomeScore(monthlyIncome: number | null, monthlyRent: number): number {
+    if (!monthlyIncome || monthlyIncome <= 0) return 0;
+
+    const ratio = monthlyIncome / monthlyRent;
+
+    if (ratio >= 4) return 100; // Отлично
+    if (ratio >= 3) return 90; // Очень хорошо
+    if (ratio >= 2.5) return 75; // Хорошо
+    if (ratio >= 2) return 60; // Приемлемо
+    if (ratio >= 1.5) return 40; // Рискованно
+    return 20; // Высокий риск
+  }
+
+  /**
+   * Employment Score: стабильность занятости
+   */
+  private static async calculateEmploymentScore(tenant: any, documents: any[]): Promise<number> {
+    let score = 50; // Базовый балл
+
+    // +20 если есть подтвержденный контракт
+    const hasEmploymentContract = documents.some(
+      (d) => d.document?.type === 'EMPLOYMENT_CONTRACT' && d.document?.status === 'VERIFIED'
+    );
+    if (hasEmploymentContract) score += 20;
+
+    // +15 если есть payslip
+    const hasPayslip = documents.some(
+      (d) => d.document?.type === 'PAYSLIP' && d.document?.status === 'VERIFIED'
+    );
+    if (hasPayslip) score += 15;
+
+    // +15 если указана профессия
+    if (tenant.occupation) score += 15;
+
+    return Math.min(score, 100);
+  }
+
+  /**
+   * Rental History Score: история аренды
+   */
+  private static calculateRentalHistoryScore(tenant: any): number {
+    let score = 70; // Базовый балл для новых арендаторов
+
+    // +30 если есть рекомендательное письмо от предыдущего арендодателя
+    if (tenant.hasReferences) score += 30;
+
+    // Дополнительная логика может включать:
+    // - Количество лет аренды
+    // - Отзывы от предыдущих арендодателей
+
+    return Math.min(score, 100);
+  }
+
+  /**
+   * Verification Score: уровень верификации документов
+   */
+  private static calculateVerificationScore(tenantDocs: any[], applicationDocs: any[]): number {
+    const allDocs = [...tenantDocs, ...applicationDocs.map((d) => d.document)];
+
+    if (allDocs.length === 0) return 0;
+
+    const verifiedCount = allDocs.filter((d) => d?.status === 'VERIFIED').length;
+    const totalCount = allDocs.length;
+
+    // Базовый процент верификации
+    const verificationRate = (verifiedCount / totalCount) * 100;
+
+    // Бонус за DNI/NIE верификацию
+    const hasVerifiedId = allDocs.some(
+      (d) => ['DNI', 'NIE', 'TIE', 'PASSPORT'].includes(d?.type) && d?.status === 'VERIFIED'
+    );
+    const idBonus = hasVerifiedId ? 20 : 0;
+
+    return Math.min(Math.round(verificationRate * 0.8 + idBonus), 100);
+  }
+
+  /**
+   * Criteria Match Score: соответствие критериям владельца
+   */
+  private static calculateCriteriaMatchScore(tenant: any, listing: any): number {
+    // Если у листинга нет критериев, даем полный балл
+    if (!listing.preferredTenantCriteria) return 100;
+
+    let score = 100;
+    const criteria = listing.preferredTenantCriteria;
+
+    // Проверка минимального дохода
+    if (criteria.minIncome && tenant.monthlyIncome) {
+      if (tenant.monthlyIncome < criteria.minIncome) {
+        score -= 30;
+      }
+    }
+
+    // Проверка профессии (если указана)
+    if (criteria.preferredOccupations?.length > 0) {
+      if (!criteria.preferredOccupations.includes(tenant.occupation)) {
+        score -= 10;
+      }
+    }
+
+    // Проверка наличия домашних животных
+    if (criteria.noPets && tenant.hasPets) {
+      score -= 20;
+    }
+
+    // Проверка курения
+    if (criteria.noSmoking && tenant.isSmoker) {
+      score -= 20;
+    }
+
+    return Math.max(score, 0);
+  }
+
+  /**
+   * Определяет уровень риска
+   */
+  private static calculateRiskLevel(totalScore: number): RiskLevel {
+    if (totalScore >= 75) return 'LOW';
+    if (totalScore >= 50) return 'MEDIUM';
+    return 'HIGH';
+  }
+
+  /**
+   * Генерирует рекомендации для владельца
+   */
+  private static generateRecommendations(scores: {
+    incomeScore: number;
+    employmentScore: number;
+    rentalHistoryScore: number;
+    verificationScore: number;
+    criteriaMatchScore: number;
+  }): string[] {
+    const recommendations: string[] = [];
+
+    if (scores.incomeScore < 60) {
+      recommendations.push(
+        'Доход арендатора ниже рекомендуемого уровня (3x аренды). ' +
+          'Рассмотрите возможность запроса дополнительного депозита или поручителя.'
+      );
+    }
+
+    if (scores.employmentScore < 60) {
+      recommendations.push(
+        'Недостаточно подтверждений занятости. ' +
+          'Запросите трудовой договор или справку с работы.'
+      );
+    }
+
+    if (scores.verificationScore < 50) {
+      recommendations.push(
+        'Низкий уровень верификации документов. ' +
+          'Попросите арендатора загрузить и верифицировать документы.'
+      );
+    }
+
+    if (scores.criteriaMatchScore < 70) {
+      recommendations.push('Арендатор не полностью соответствует указанным критериям.');
+    }
+
+    if (recommendations.length === 0) {
+      recommendations.push(
+        'Арендатор соответствует всем критериям. Рекомендуется одобрение заявки.'
+      );
+    }
+
+    return recommendations;
   }
 }
 ```
 
+---
+
+#### Application Schema (Zod)
+
+**src/schemas/application.schema.ts:**
+
+```typescript
+import { z } from 'zod';
+
+export const createApplicationSchema = z.object({
+  listingId: z.string().uuid('Invalid listing ID'),
+  message: z.string().max(1000).optional(),
+  moveInDate: z.coerce
+    .date()
+    .refine((date) => date >= new Date(), 'Move-in date must be in the future'),
+  leaseDuration: z.number().int().min(1).max(60).optional(),
+});
+
+export const updateApplicationStatusSchema = z
+  .object({
+    status: z.enum(['REVIEWING', 'APPROVED', 'REJECTED']),
+    rejectionReason: z.string().max(500).optional(),
+  })
+  .refine(
+    (data) => {
+      if (data.status === 'REJECTED' && !data.rejectionReason) {
+        return false;
+      }
+      return true;
+    },
+    { message: 'Rejection reason is required when rejecting an application' }
+  );
+
+export const applicationQuerySchema = z.object({
+  status: z.enum(['PENDING', 'REVIEWING', 'APPROVED', 'REJECTED', 'WITHDRAWN']).optional(),
+  listingId: z.string().uuid().optional(),
+  page: z.coerce.number().int().min(1).default(1),
+  limit: z.coerce.number().int().min(1).max(50).default(10),
+});
+
+export type CreateApplicationInput = z.infer<typeof createApplicationSchema>;
+export type UpdateApplicationStatusInput = z.infer<typeof updateApplicationStatusSchema>;
+export type ApplicationQueryInput = z.infer<typeof applicationQuerySchema>;
+```
+
+---
+
+#### TDD Test Cases
+
+**tests/applications.test.ts:**
+
+```typescript
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
+import { createApp } from '../src/app.js';
+import { FastifyInstance } from 'fastify';
+
+describe('Application API', () => {
+  let app: FastifyInstance;
+  let tenantToken: string;
+  let ownerToken: string;
+  let listingId: string;
+
+  beforeAll(async () => {
+    app = await createApp();
+    // Setup: создать tenant, owner, property, listing
+    // Получить JWT tokens
+  });
+
+  afterAll(async () => {
+    await app.close();
+  });
+
+  describe('POST /api/v1/applications', () => {
+    it('should create application as tenant', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/applications',
+        headers: { Authorization: `Bearer ${tenantToken}` },
+        payload: {
+          listingId,
+          message: 'I am interested in this property',
+          moveInDate: '2026-02-01',
+          leaseDuration: 12,
+        },
+      });
+
+      expect(response.statusCode).toBe(201);
+      const body = response.json();
+      expect(body.status).toBe('PENDING');
+      expect(body.listingId).toBe(listingId);
+    });
+
+    it('should reject if listing does not exist', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/applications',
+        headers: { Authorization: `Bearer ${tenantToken}` },
+        payload: {
+          listingId: '00000000-0000-0000-0000-000000000000',
+          moveInDate: '2026-02-01',
+        },
+      });
+
+      expect(response.statusCode).toBe(404);
+    });
+
+    it('should reject duplicate applications', async () => {
+      // First application
+      await app.inject({
+        method: 'POST',
+        url: '/api/v1/applications',
+        headers: { Authorization: `Bearer ${tenantToken}` },
+        payload: { listingId, moveInDate: '2026-02-01' },
+      });
+
+      // Duplicate attempt
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/applications',
+        headers: { Authorization: `Bearer ${tenantToken}` },
+        payload: { listingId, moveInDate: '2026-02-01' },
+      });
+
+      expect(response.statusCode).toBe(409); // Conflict
+    });
+
+    it('should reject if user is not tenant', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/applications',
+        headers: { Authorization: `Bearer ${ownerToken}` },
+        payload: { listingId, moveInDate: '2026-02-01' },
+      });
+
+      expect(response.statusCode).toBe(403);
+    });
+  });
+
+  describe('GET /api/v1/applications', () => {
+    it('should list tenant applications', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/v1/applications',
+        headers: { Authorization: `Bearer ${tenantToken}` },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = response.json();
+      expect(body.applications).toBeInstanceOf(Array);
+    });
+
+    it('should list applications for owner listings', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/v1/applications',
+        headers: { Authorization: `Bearer ${ownerToken}` },
+      });
+
+      expect(response.statusCode).toBe(200);
+    });
+
+    it('should filter by status', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/v1/applications?status=PENDING',
+        headers: { Authorization: `Bearer ${tenantToken}` },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = response.json();
+      body.applications.forEach((app: any) => {
+        expect(app.status).toBe('PENDING');
+      });
+    });
+  });
+
+  describe('PATCH /api/v1/applications/:id/status', () => {
+    it('should allow owner to update status', async () => {
+      // Create application first
+      const createRes = await app.inject({
+        method: 'POST',
+        url: '/api/v1/applications',
+        headers: { Authorization: `Bearer ${tenantToken}` },
+        payload: { listingId, moveInDate: '2026-02-01' },
+      });
+      const applicationId = createRes.json().id;
+
+      // Update status
+      const response = await app.inject({
+        method: 'PATCH',
+        url: `/api/v1/applications/${applicationId}/status`,
+        headers: { Authorization: `Bearer ${ownerToken}` },
+        payload: { status: 'REVIEWING' },
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json().status).toBe('REVIEWING');
+    });
+
+    it('should require rejection reason when rejecting', async () => {
+      const response = await app.inject({
+        method: 'PATCH',
+        url: `/api/v1/applications/${applicationId}/status`,
+        headers: { Authorization: `Bearer ${ownerToken}` },
+        payload: { status: 'REJECTED' }, // Missing rejectionReason
+      });
+
+      expect(response.statusCode).toBe(400);
+    });
+
+    it('should reject if tenant tries to update status', async () => {
+      const response = await app.inject({
+        method: 'PATCH',
+        url: `/api/v1/applications/${applicationId}/status`,
+        headers: { Authorization: `Bearer ${tenantToken}` },
+        payload: { status: 'APPROVED' },
+      });
+
+      expect(response.statusCode).toBe(403);
+    });
+  });
+
+  describe('POST /api/v1/applications/:id/withdraw', () => {
+    it('should allow tenant to withdraw own application', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: `/api/v1/applications/${applicationId}/withdraw`,
+        headers: { Authorization: `Bearer ${tenantToken}` },
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json().status).toBe('WITHDRAWN');
+    });
+  });
+
+  describe('POST /api/v1/applications/:id/score', () => {
+    it('should calculate AI scoring', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: `/api/v1/applications/${applicationId}/score`,
+        headers: { Authorization: `Bearer ${ownerToken}` },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = response.json();
+      expect(body.totalScore).toBeGreaterThanOrEqual(0);
+      expect(body.totalScore).toBeLessThanOrEqual(100);
+      expect(['LOW', 'MEDIUM', 'HIGH']).toContain(body.riskLevel);
+      expect(body.recommendations).toBeInstanceOf(Array);
+    });
+  });
+});
+```
+
+---
+
 **Acceptance Criteria:**
 
-- [ ] Tenant может подать заявку на listing
-- [ ] Owner видит все заявки на свои listings
-- [ ] AI scoring рассчитывает 5 метрик
-- [ ] TenantScoring сохраняется в DB
-- [ ] Risk Level определяется (LOW/MEDIUM/HIGH)
-- [ ] Coverage > 80%
-- [ ] Git commit: "feat: implement tenant applications and AI scoring"
+- [x] Tenant может подать заявку на listing ✅
+- [x] Tenant не может подать повторную заявку на тот же listing ✅
+- [x] Owner видит все заявки на свои listings ✅
+- [x] Owner может изменить статус заявки (REVIEWING, APPROVED, REJECTED) ✅
+- [x] Rejection требует указания причины ✅
+- [x] Tenant может отозвать свою заявку (WITHDRAWN) ✅
+- [x] AI scoring рассчитывает 5 метрик ✅
+- [x] TenantScoring сохраняется в DB ✅
+- [x] Risk Level определяется (LOW/MEDIUM/HIGH) ✅
+- [x] Генерируются рекомендации для владельца ✅
+- [x] 31 тест покрывает все сценарии ✅
+- [x] Coverage: 86.09% ✅
+- [x] Git commit: "feat: implement tenant applications and AI scoring" ✅
 
 ---
 
@@ -860,10 +1530,11 @@ git push
 
 **Текущий статус:**
 
-- Overall: 78.96% ✅
-- Services: 86.57% ✅
-- Controllers: 76.74% ✅
+- Overall: 86.44% ✅ (>80% target achieved!)
+- Services: 86.33% ✅
+- Controllers: 77.72% ✅
 - Routes: 100% ✅
+- Schemas: 100% ✅
 
 ---
 
@@ -925,5 +1596,5 @@ git commit -m "feat: implement profile management API"
 
 ---
 
-**Last Updated:** 2026-01-04
-**Next Milestone:** Property & Listing CRUD API (Week 3-4)
+**Last Updated:** 2026-01-12
+**Next Milestone:** Contracts & Payments with Stripe (Week 5-6)

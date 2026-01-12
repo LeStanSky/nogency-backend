@@ -7,6 +7,12 @@ build/
 *.tsbuildinfo
 *.map
 
+# Compiled JS/TS output in source directories
+tests/*.js
+tests/*.d.ts
+scripts/*.js
+scripts/*.d.ts
+
 # Environment files
 .env
 .env.*

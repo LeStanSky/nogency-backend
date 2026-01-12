@@ -2,13 +2,43 @@ import Anthropic from '@anthropic-ai/sdk';
 import { config } from '../config.js';
 
 interface DocumentVerificationResult {
-  [key: string]: any;
+  [key: string]: string | number | boolean | null | DocumentVerificationResult | unknown[];
 }
+
+type ImageMediaType = 'image/jpeg' | 'image/png' | 'image/gif' | 'image/webp';
 
 export class AIService {
   private static client = new Anthropic({
     apiKey: config.anthropic.apiKey,
   });
+
+  /**
+   * Fetch image from URL and convert to base64
+   */
+  private static async fetchImageAsBase64(
+    imageUrl: string
+  ): Promise<{ data: string; mediaType: ImageMediaType }> {
+    const response = await fetch(imageUrl);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch image: ${response.statusText}`);
+    }
+
+    const contentType = response.headers.get('content-type') || 'image/jpeg';
+    const arrayBuffer = await response.arrayBuffer();
+    const base64 = Buffer.from(arrayBuffer).toString('base64');
+
+    // Map content type to valid Anthropic media type
+    let mediaType: ImageMediaType = 'image/jpeg';
+    if (contentType.includes('png')) {
+      mediaType = 'image/png';
+    } else if (contentType.includes('gif')) {
+      mediaType = 'image/gif';
+    } else if (contentType.includes('webp')) {
+      mediaType = 'image/webp';
+    }
+
+    return { data: base64, mediaType };
+  }
 
   /**
    * Verify document using Claude Vision API
@@ -20,6 +50,7 @@ export class AIService {
   ): Promise<DocumentVerificationResult> {
     try {
       const prompt = this.getPromptForDocumentType(documentType);
+      const { data, mediaType } = await this.fetchImageAsBase64(fileUrl);
 
       const response = await this.client.messages.create({
         model: 'claude-3-5-sonnet-20241022',
@@ -31,8 +62,9 @@ export class AIService {
               {
                 type: 'image',
                 source: {
-                  type: 'url',
-                  url: fileUrl,
+                  type: 'base64',
+                  media_type: mediaType,
+                  data,
                 },
               },
               {

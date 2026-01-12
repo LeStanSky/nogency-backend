@@ -2,6 +2,7 @@ import { prisma } from '../db/client.js';
 import { StorageService } from './storage.service.js';
 import { AIService } from './ai.service.js';
 import { UploadDocumentInput } from '../schemas/document.schema.js';
+import { Prisma } from '@prisma/client';
 
 export class DocumentsService {
   /**
@@ -155,7 +156,7 @@ export class DocumentsService {
         },
         data: {
           status: 'VERIFIED',
-          verificationData,
+          verificationData: verificationData as Prisma.InputJsonValue,
           verifiedAt: new Date(),
         },
       });

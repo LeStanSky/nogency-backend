@@ -5,6 +5,9 @@ import { config } from './config.js';
 import authRoutes from './routes/auth.routes.js';
 import profileRoutes from './routes/profile.routes.js';
 import documentsRoutes from './routes/documents.routes.js';
+import propertyRoutes from './routes/property.routes.js';
+import listingRoutes from './routes/listing.routes.js';
+import applicationRoutes from './routes/application.routes.js';
 
 export const createApp = async (): Promise<FastifyInstance> => {
   const app = Fastify({
@@ -49,6 +52,9 @@ export const createApp = async (): Promise<FastifyInstance> => {
   await app.register(authRoutes, { prefix: '/api/v1/auth' });
   await app.register(profileRoutes, { prefix: '/api/v1/profiles' });
   await app.register(documentsRoutes, { prefix: '/api/v1/documents' });
+  await app.register(propertyRoutes, { prefix: '/api/v1/properties' });
+  await app.register(listingRoutes, { prefix: '/api/v1/listings' });
+  await app.register(applicationRoutes, { prefix: '/api/v1/applications' });
 
   return app;
 };
