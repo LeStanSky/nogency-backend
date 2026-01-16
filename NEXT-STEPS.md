@@ -1,6 +1,6 @@
 # Дальнейшие шаги разработки (TDD подход)
 
-## ✅ Текущий статус проекта (Updated: 2026-01-12)
+## ✅ Текущий статус проекта (Updated: 2026-01-16)
 
 ### Инфраструктура
 
@@ -100,6 +100,28 @@
   - [x] Проверка статуса листинга (только ACTIVE)
   - [x] 31 тест покрывает все сценарии
   - [x] Coverage: 86.09% overall
+
+- [x] **Contract API полностью реализован** ✅
+  - [x] POST /api/v1/contracts (создание контракта из approved application)
+  - [x] GET /api/v1/contracts (список контрактов owner/tenant)
+  - [x] GET /api/v1/contracts/:id (получение деталей контракта)
+  - [x] POST /api/v1/contracts/:id/send-for-signing (отправка на подпись)
+  - [x] POST /api/v1/contracts/:id/sign (подпись контракта owner/tenant)
+  - [x] POST /api/v1/contracts/:id/terminate (расторжение контракта)
+  - [x] LeaseEvent tracking (CONTRACT_CREATED, CONTRACT_SENT, SIGNED_OWNER, SIGNED_TENANT, ACTIVE, TERMINATED)
+  - [x] Contract workflow: DRAFT → PENDING_SIGNATURES → ACTIVE → TERMINATED
+  - [x] Listing status автоматически обновляется (ACTIVE → RENTED)
+  - [x] 24 теста покрывают все сценарии
+
+- [x] **Payment API (Stripe Integration) полностью реализован** ✅
+  - [x] POST /api/v1/payments/create-intent (создание Stripe payment intent)
+  - [x] GET /api/v1/payments (список платежей tenant/owner)
+  - [x] GET /api/v1/payments/:id (получение платежа по ID)
+  - [x] POST /api/v1/payments/webhook (обработка Stripe webhooks)
+  - [x] GET /api/v1/contracts/:id/payments (платежи по контракту)
+  - [x] Поддержка типов платежей: DEPOSIT, MONTHLY_RENT, UTILITIES, LATE_FEE, DAMAGE_DEPOSIT
+  - [x] Webhook обрабатывает payment_intent.succeeded / payment_intent.payment_failed
+  - [x] 21 тест покрывает все сценарии
 
 ### Dependencies установлены
 
@@ -1190,14 +1212,267 @@ export class PaymentService {
 
 **Acceptance Criteria:**
 
-- [ ] Contract создается из approved application
-- [ ] Owner и tenant могут подписать контракт
-- [ ] PDF generation для контракта
-- [ ] Stripe payment intent создается
-- [ ] Webhook обрабатывает успешные платежи
-- [ ] Payment статусы обновляются
-- [ ] Coverage > 80%
-- [ ] Git commit: "feat: implement contracts and payments with Stripe"
+**Contract API:**
+
+- [x] Contract создается из approved application ✅
+- [x] Owner и tenant могут подписать контракт ✅
+- [x] POST /api/v1/contracts - Create contract from application ✅
+- [x] GET /api/v1/contracts - List contracts (owner/tenant) ✅
+- [x] GET /api/v1/contracts/:id - Get contract details ✅
+- [x] POST /api/v1/contracts/:id/send-for-signing - Send for signing ✅
+- [x] POST /api/v1/contracts/:id/sign - Sign contract ✅
+- [x] POST /api/v1/contracts/:id/terminate - Terminate contract ✅
+- [x] Lease events tracked (created, sent, signed, active, terminated) ✅
+- [x] 24 теста покрывают все сценарии ✅
+
+**Payment API (Stripe Integration):**
+
+- [x] POST /api/v1/payments/create-intent - Create Stripe payment intent ✅
+- [x] GET /api/v1/payments - List payments (tenant/owner) ✅
+- [x] GET /api/v1/payments/:id - Get payment by ID ✅
+- [x] POST /api/v1/payments/webhook - Handle Stripe webhooks ✅
+- [x] GET /api/v1/contracts/:id/payments - List payments for contract ✅
+- [x] Stripe payment intent создается ✅
+- [x] Webhook обрабатывает успешные/failed платежи ✅
+- [x] Payment статусы обновляются ✅
+- [x] 21 тест покрывает все сценарии ✅
+- [ ] PDF generation для контракта (optional, future enhancement)
+
+---
+
+### 📋 Рекомендации по улучшению проекта
+
+**⚠️ Примечание:** Приоритетность выполнения этих задач следует уточнить после завершения всех задач недель 5-6 (Contracts & Payments).
+
+#### 1. API Documentation (OpenAPI/Swagger)
+
+**Цель:** Автоматическая генерация API документации для фронтенда
+
+**Реализация:**
+
+```bash
+npm install @fastify/swagger @fastify/swagger-ui
+```
+
+```typescript
+// src/app.ts
+import swagger from '@fastify/swagger';
+import swaggerUI from '@fastify/swagger-ui';
+
+await app.register(swagger, {
+  openapi: {
+    info: {
+      title: 'NoGency AI API',
+      version: '1.0.0',
+    },
+  },
+});
+
+await app.register(swaggerUI, {
+  routePrefix: '/docs',
+});
+```
+
+**Acceptance Criteria:**
+
+- [ ] Swagger UI доступен на `/docs`
+- [ ] Все endpoints задокументированы
+- [ ] Request/Response схемы описаны
+- [ ] Примеры запросов добавлены
+
+---
+
+#### 2. Rate Limiting
+
+**Цель:** Защита API от злоупотреблений и DDoS атак
+
+**Реализация:**
+
+```bash
+npm install @fastify/rate-limit
+```
+
+```typescript
+// src/app.ts
+import rateLimit from '@fastify/rate-limit';
+
+await app.register(rateLimit, {
+  max: 100, // requests
+  timeWindow: '1 minute',
+});
+```
+
+**Acceptance Criteria:**
+
+- [ ] Rate limiting настроен для всех endpoints
+- [ ] Разные лимиты для auth endpoints (более строгие)
+- [ ] Rate limit headers в ответах
+- [ ] Тесты для rate limiting
+
+---
+
+#### 3. Улучшенный Error Handling
+
+**Цель:** Стандартизированные ошибки и лучший UX
+
+**Реализация:**
+
+```typescript
+// src/utils/errors.ts
+export class AppError extends Error {
+  constructor(
+    public statusCode: number,
+    public message: string,
+    public code?: string
+  ) {
+    super(message);
+  }
+}
+
+// src/app.ts - Global error handler
+app.setErrorHandler((error, request, reply) => {
+  // Стандартизированный формат ошибок
+});
+```
+
+**Acceptance Criteria:**
+
+- [ ] Custom error classes созданы
+- [ ] Global error handler настроен
+- [ ] Все ошибки в стандартном формате
+- [ ] Логирование ошибок улучшено
+
+---
+
+#### 4. Мониторинг и Логирование
+
+**Цель:** Отслеживание производительности и ошибок в production
+
+**Варианты:**
+
+- **Sentry** - Error tracking
+- **DataDog** - APM и мониторинг
+- **Winston/Pino** - Structured logging
+
+**Acceptance Criteria:**
+
+- [ ] Error tracking настроен (Sentry)
+- [ ] Structured logging реализован
+- [ ] Performance metrics собираются
+- [ ] Alerts настроены для критических ошибок
+
+---
+
+#### 5. Email Notifications (Resend Integration)
+
+**Цель:** Отправка уведомлений пользователям
+
+**Endpoints для реализации:**
+
+1. **POST /api/v1/notifications/email** - Отправить email
+2. **POST /api/v1/notifications/verify-email** - Верификация email
+3. **POST /api/v1/notifications/password-reset** - Сброс пароля
+
+**Acceptance Criteria:**
+
+- [ ] Resend SDK интегрирован
+- [ ] Email templates созданы
+- [ ] Email верификация работает
+- [ ] Password reset через email
+- [ ] Тесты с mocked Resend API
+
+---
+
+#### 6. Health Checks для внешних сервисов
+
+**Цель:** Мониторинг доступности зависимостей
+
+**Реализация:**
+
+```typescript
+// GET /health/detailed
+{
+  "status": "ok",
+  "database": "connected",
+  "supabase": "connected",
+  "anthropic": "connected",
+  "stripe": "connected"
+}
+```
+
+**Acceptance Criteria:**
+
+- [ ] Health check для PostgreSQL
+- [ ] Health check для Supabase Storage
+- [ ] Health check для Anthropic API
+- [ ] Health check для Stripe API
+- [ ] Endpoint `/health/detailed` реализован
+
+---
+
+#### 7. CI/CD Pipeline (GitHub Actions)
+
+**Цель:** Автоматизация тестирования и деплоя
+
+**Workflow:**
+
+```yaml
+# .github/workflows/ci.yml
+- Run tests
+- Check coverage
+- Lint code
+- Build TypeScript
+- Deploy to staging/production
+```
+
+**Acceptance Criteria:**
+
+- [ ] GitHub Actions workflow создан
+- [ ] Автоматические тесты на PR
+- [ ] Coverage проверка
+- [ ] Автоматический деплой (опционально)
+
+---
+
+#### 8. Database Migrations Best Practices
+
+**Цель:** Безопасные миграции в production
+
+**Рекомендации:**
+
+- [ ] Всегда использовать `prisma migrate` вместо `db push` в production
+- [ ] Backup базы перед миграциями
+- [ ] Тестировать миграции на staging
+- [ ] Rollback план для каждой миграции
+
+---
+
+#### 9. API Versioning Strategy
+
+**Цель:** Поддержка нескольких версий API
+
+**Реализация:**
+
+- Текущая версия: `/api/v1/`
+- Будущие версии: `/api/v2/`
+- Deprecation policy для старых версий
+
+---
+
+#### 10. Performance Optimization
+
+**Цель:** Улучшение скорости ответов API
+
+**Оптимизации:**
+
+- [ ] Database query optimization (N+1 проблемы)
+- [ ] Caching для часто запрашиваемых данных (Redis)
+- [ ] Pagination для всех list endpoints
+- [ ] Database indexes проверены и оптимизированы
+
+---
+
+**Приоритетность выполнения будет определена после завершения Week 5-6 (Contracts & Payments).**
 
 ---
 
@@ -1596,5 +1871,5 @@ git commit -m "feat: implement profile management API"
 
 ---
 
-**Last Updated:** 2026-01-12
-**Next Milestone:** Contracts & Payments with Stripe (Week 5-6)
+**Last Updated:** 2026-01-16
+**Next Milestone:** Plaid Integration (Week 7-8) or API Documentation / Rate Limiting (recommendations)

@@ -8,6 +8,8 @@ import documentsRoutes from './routes/documents.routes.js';
 import propertyRoutes from './routes/property.routes.js';
 import listingRoutes from './routes/listing.routes.js';
 import applicationRoutes from './routes/application.routes.js';
+import contractRoutes from './routes/contract.routes.js';
+import paymentRoutes from './routes/payment.routes.js';
 
 export const createApp = async (): Promise<FastifyInstance> => {
   const app = Fastify({
@@ -55,6 +57,8 @@ export const createApp = async (): Promise<FastifyInstance> => {
   await app.register(propertyRoutes, { prefix: '/api/v1/properties' });
   await app.register(listingRoutes, { prefix: '/api/v1/listings' });
   await app.register(applicationRoutes, { prefix: '/api/v1/applications' });
+  await app.register(contractRoutes, { prefix: '/api/v1/contracts' });
+  await app.register(paymentRoutes, { prefix: '/api/v1/payments' });
 
   return app;
 };

@@ -2,13 +2,13 @@ import { prisma } from '../db/client.js';
 import { StorageService } from './storage.service.js';
 import { AIService } from './ai.service.js';
 import { UploadDocumentInput } from '../schemas/document.schema.js';
-import { Prisma } from '@prisma/client';
+import { Prisma, Document } from '@prisma/client';
 
 export class DocumentsService {
   /**
    * Upload a document and create database record
    */
-  static async uploadDocument(userId: string, data: UploadDocumentInput): Promise<any> {
+  static async uploadDocument(userId: string, data: UploadDocumentInput): Promise<Document> {
     try {
       // Upload file to storage
       const fileUrl = await StorageService.uploadFile(
@@ -42,7 +42,7 @@ export class DocumentsService {
   /**
    * Get all documents for a user
    */
-  static async getUserDocuments(userId: string): Promise<any[]> {
+  static async getUserDocuments(userId: string): Promise<Document[]> {
     try {
       const documents = await prisma.document.findMany({
         where: {
@@ -64,7 +64,7 @@ export class DocumentsService {
   /**
    * Get a single document by ID with ownership check
    */
-  static async getDocumentById(userId: string, documentId: string): Promise<any> {
+  static async getDocumentById(userId: string, documentId: string): Promise<Document> {
     try {
       const document = await prisma.document.findUnique({
         where: {
@@ -124,7 +124,7 @@ export class DocumentsService {
   /**
    * Verify a document using AI
    */
-  static async verifyDocument(userId: string, documentId: string): Promise<any> {
+  static async verifyDocument(userId: string, documentId: string): Promise<Document> {
     try {
       const document = await prisma.document.findUnique({
         where: {
