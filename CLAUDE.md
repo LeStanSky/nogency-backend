@@ -195,6 +195,17 @@ FRONTEND_URL              # CORS allowed origin
 
 Copy `.env.example` to `.env` and fill in values.
 
+**Git Configuration (Line Endings):**
+
+Project uses LF (Unix-style) line endings. On first clone, configure Git:
+
+```bash
+git config core.autocrlf input
+git add --renormalize .
+```
+
+The `.gitattributes` file ensures all text files use LF in the repository for cross-platform compatibility.
+
 ## Development Workflow
 
 1. **Always work in `dev` branch** unless creating feature branch
