@@ -2,9 +2,6 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach, vi } from 'vites
 import { createApp } from '../src/app.js';
 import { FastifyInstance } from 'fastify';
 import { prisma } from '../src/db/client.js';
-import bcrypt from 'bcryptjs';
-import jwt from 'jsonwebtoken';
-import { config } from '../src/config.js';
 
 // Mock Stripe
 vi.mock('stripe', () => {
@@ -35,10 +32,10 @@ vi.mock('stripe', () => {
 
 describe('Payment API', () => {
   let app: FastifyInstance;
-  let ownerUserId: string;
+  let _ownerUserId: string;
   let ownerProfileId: string;
   let ownerToken: string;
-  let tenantUserId: string;
+  let _tenantUserId: string;
   let tenantProfileId: string;
   let tenantToken: string;
   let contractId: string;
@@ -46,11 +43,13 @@ describe('Payment API', () => {
   beforeAll(async () => {
     console.log('🧪 Setting up Payment API test environment...');
     app = await createApp();
+    await app.ready();
   });
 
   afterAll(async () => {
     console.log('✅ Payment tests completed, cleaning up...');
     await app.close();
+    await prisma.$disconnect();
   });
 
   beforeEach(async () => {
@@ -77,56 +76,110 @@ describe('Payment API', () => {
     await prisma.userRole.deleteMany();
     await prisma.user.deleteMany();
 
-    // Create owner user
-    const ownerPasswordHash = await bcrypt.hash('password123', 10);
-    const ownerUser = await prisma.user.create({
-      data: {
+    // Create owner user via API
+    const ownerRegisterResponse = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/register',
+      payload: {
         email: 'payment-owner@test.com',
-        passwordHash: ownerPasswordHash,
-        isEmailVerified: true,
+        password: 'SecurePass123!',
+        phone: '+34611111111',
+        role: 'OWNER',
       },
     });
-    ownerUserId = ownerUser.id;
 
-    // Create owner profile
-    const ownerProfile = await prisma.ownerProfile.create({
-      data: {
-        userId: ownerUserId,
+    const ownerRegisterBody = JSON.parse(ownerRegisterResponse.body);
+    ownerToken = ownerRegisterBody.token;
+    _ownerUserId = ownerRegisterBody.user.id;
+
+    // Create owner profile via API
+    const ownerProfileResponse = await app.inject({
+      method: 'POST',
+      url: '/api/v1/profiles/owner',
+      headers: { authorization: `Bearer ${ownerToken}` },
+      payload: {
         firstName: 'Payment',
         lastName: 'Owner',
         documentType: 'DNI',
         documentNumber: '12345678A',
       },
     });
-    ownerProfileId = ownerProfile.id;
 
-    // Create owner role
-    await prisma.userRole.create({
-      data: {
-        userId: ownerUserId,
-        role: 'OWNER',
+    const ownerProfileBody = JSON.parse(ownerProfileResponse.body);
+    ownerProfileId = ownerProfileBody.id;
+
+    // Create property via API
+    const propertyResponse = await app.inject({
+      method: 'POST',
+      url: '/api/v1/properties',
+      headers: { authorization: `Bearer ${ownerToken}` },
+      payload: {
+        address: {
+          street: 'Calle Test',
+          number: '123',
+          city: 'Madrid',
+          postalCode: '28001',
+          province: 'Madrid',
+          country: 'Spain',
+        },
+        propertyType: 'APARTMENT',
+        totalArea: 75,
+        roomCount: 3,
+        furnished: 'FULLY',
       },
     });
 
-    ownerToken = jwt.sign({ userId: ownerUserId, email: ownerUser.email }, config.jwt.secret, {
-      expiresIn: '1h',
+    const propertyBody = JSON.parse(propertyResponse.body);
+    const propertyId = propertyBody.id;
+
+    // Create listing via API
+    const listingResponse = await app.inject({
+      method: 'POST',
+      url: '/api/v1/listings',
+      headers: { authorization: `Bearer ${ownerToken}` },
+      payload: {
+        propertyId,
+        title: 'Beautiful apartment for rent',
+        description: 'A great apartment in the city center',
+        monthlyRent: 1200,
+        depositAmount: 2400,
+        minLeaseTermMonths: 12,
+        availableFrom: '2026-02-01',
+      },
     });
 
-    // Create tenant user
-    const tenantPasswordHash = await bcrypt.hash('password123', 10);
-    const tenantUser = await prisma.user.create({
-      data: {
+    const listingBody = JSON.parse(listingResponse.body);
+    const listingId = listingBody.id;
+
+    // Publish listing
+    await app.inject({
+      method: 'POST',
+      url: `/api/v1/listings/${listingId}/publish`,
+      headers: { authorization: `Bearer ${ownerToken}` },
+    });
+
+    // Create tenant user via API
+    const tenantRegisterResponse = await app.inject({
+      method: 'POST',
+      url: '/api/v1/auth/register',
+      payload: {
         email: 'payment-tenant@test.com',
-        passwordHash: tenantPasswordHash,
-        isEmailVerified: true,
+        password: 'SecurePass123!',
+        phone: '+34622222222',
+        role: 'TENANT',
       },
     });
-    tenantUserId = tenantUser.id;
 
-    // Create tenant profile
-    const tenantProfile = await prisma.tenantProfile.create({
-      data: {
-        userId: tenantUserId,
+    const tenantRegisterBody = JSON.parse(tenantRegisterResponse.body);
+    tenantToken = tenantRegisterBody.token;
+    _tenantUserId = tenantRegisterBody.user.id;
+
+    // Create tenant profile via API
+    const tenantProfileResponse = await app.inject({
+      method: 'POST',
+      url: '/api/v1/profiles/tenant',
+      headers: { authorization: `Bearer ${tenantToken}` },
+      payload: {
         firstName: 'Payment',
         lastName: 'Tenant',
         documentType: 'NIE',
@@ -135,87 +188,76 @@ describe('Payment API', () => {
         occupation: 'EMPLOYED',
       },
     });
-    tenantProfileId = tenantProfile.id;
 
-    // Create tenant role
-    await prisma.userRole.create({
-      data: {
-        userId: tenantUserId,
-        role: 'TENANT',
-      },
-    });
+    const tenantProfileBody = JSON.parse(tenantProfileResponse.body);
+    tenantProfileId = tenantProfileBody.id;
 
-    tenantToken = jwt.sign({ userId: tenantUserId, email: tenantUser.email }, config.jwt.secret, {
-      expiresIn: '1h',
-    });
-
-    // Create property
-    const property = await prisma.property.create({
-      data: {
-        ownerId: ownerProfileId,
-        propertyType: 'APARTMENT',
-        address: {
-          street: 'Calle Test 123',
-          city: 'Madrid',
-          postalCode: '28001',
-          country: 'ES',
-        },
-        roomCount: 3,
-        totalArea: 75,
-        furnished: 'FULLY',
-      },
-    });
-
-    // Create listing
-    const listing = await prisma.listing.create({
-      data: {
-        propertyId: property.id,
-        ownerId: ownerProfileId,
-        title: 'Beautiful apartment for rent',
-        description: 'A great apartment in the city center',
-        monthlyRent: 1200,
-        depositAmount: 2400,
-        minLeaseTermMonths: 12,
-        availableFrom: new Date(),
-        status: 'ACTIVE',
-      },
-    });
-
-    // Create approved application
-    const application = await prisma.application.create({
-      data: {
-        listingId: listing.id,
-        tenantId: tenantProfileId,
-        status: 'APPROVED',
-        source: 'APP',
+    // Create application via API
+    const applicationResponse = await app.inject({
+      method: 'POST',
+      url: '/api/v1/applications',
+      headers: { authorization: `Bearer ${tenantToken}` },
+      payload: {
+        listingId,
         message: 'I am very interested in this property',
-        proposedMoveInDate: new Date('2026-02-01'),
+        proposedMoveInDate: '2026-02-01',
         proposedLeaseTermMonths: 12,
       },
     });
 
-    // Create active contract
-    const contract = await prisma.leaseContract.create({
-      data: {
-        applicationId: application.id,
-        listingId: listing.id,
-        propertyId: property.id,
-        ownerId: ownerProfileId,
-        tenantId: tenantProfileId,
-        contractNumber: 'CTR-2026-TEST123',
-        startDate: new Date('2026-02-01'),
-        endDate: new Date('2027-02-01'),
+    const applicationBody = JSON.parse(applicationResponse.body);
+    const applicationId = applicationBody.id;
+
+    // Approve application
+    await app.inject({
+      method: 'PATCH',
+      url: `/api/v1/applications/${applicationId}/status`,
+      headers: { authorization: `Bearer ${ownerToken}` },
+      payload: {
+        status: 'APPROVED',
+      },
+    });
+
+    // Create contract via API
+    const contractResponse = await app.inject({
+      method: 'POST',
+      url: '/api/v1/contracts',
+      headers: { authorization: `Bearer ${ownerToken}` },
+      payload: {
+        applicationId,
+        startDate: '2026-02-01',
+        endDate: '2027-02-01',
         monthlyRent: 1200,
         depositAmount: 2400,
         depositMonths: 2,
         paymentDueDay: 1,
         utilitiesResponsibility: 'TENANT',
-        status: 'ACTIVE',
-        ownerSignedAt: new Date(),
-        tenantSignedAt: new Date(),
       },
     });
-    contractId = contract.id;
+
+    const contractBody = JSON.parse(contractResponse.body);
+    contractId = contractBody.id;
+
+    // Send contract for signing
+    await app.inject({
+      method: 'POST',
+      url: `/api/v1/contracts/${contractId}/send-for-signing`,
+      headers: { authorization: `Bearer ${ownerToken}` },
+    });
+
+    // Sign contract as owner
+    await app.inject({
+      method: 'POST',
+      url: `/api/v1/contracts/${contractId}/sign`,
+      headers: { authorization: `Bearer ${ownerToken}` },
+    });
+
+    // Sign contract as tenant
+    await app.inject({
+      method: 'POST',
+      url: `/api/v1/contracts/${contractId}/sign`,
+      headers: { authorization: `Bearer ${tenantToken}` },
+    });
 
     console.log('✅ Payment test data created');
   });
@@ -495,35 +537,32 @@ describe('Payment API', () => {
     });
 
     it('should deny access to unrelated user', async () => {
-      // Create another user
-      const otherPasswordHash = await bcrypt.hash('password123', 10);
-      const otherUser = await prisma.user.create({
-        data: {
+      // Create another user via API
+      const otherRegisterResponse = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/register',
+        payload: {
           email: 'other-user@test.com',
-          passwordHash: otherPasswordHash,
-          isEmailVerified: true,
+          password: 'SecurePass123!',
+          phone: '+34655555555',
+          role: 'TENANT',
         },
       });
-      await prisma.tenantProfile.create({
-        data: {
-          userId: otherUser.id,
+
+      const otherRegisterBody = JSON.parse(otherRegisterResponse.body);
+      const otherToken = otherRegisterBody.token;
+
+      await app.inject({
+        method: 'POST',
+        url: '/api/v1/profiles/tenant',
+        headers: { authorization: `Bearer ${otherToken}` },
+        payload: {
           firstName: 'Other',
           lastName: 'User',
           documentType: 'NIE',
           documentNumber: 'Y9999999A',
         },
       });
-      await prisma.userRole.create({
-        data: {
-          userId: otherUser.id,
-          role: 'TENANT',
-        },
-      });
-      const otherToken = jwt.sign(
-        { userId: otherUser.id, email: otherUser.email },
-        config.jwt.secret,
-        { expiresIn: '1h' }
-      );
 
       const response = await app.inject({
         method: 'GET',
