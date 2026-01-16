@@ -17,7 +17,10 @@ module.exports = {
   plugins: ['@typescript-eslint'],
   rules: {
     // Google style overrides для TypeScript
-    'indent': ['error', 2],
+    'indent': 'off', // Отключаем базовое правило indent
+    '@typescript-eslint/indent': ['error', 2, {
+      SwitchCase: 1,
+    }],
     'max-len': ['error', {
       code: 100,
       ignoreUrls: true,
@@ -34,7 +37,12 @@ module.exports = {
       exports: 'always-multiline',
       functions: 'never',
     }],
-    'operator-linebreak': ['error', 'after'],
+    'operator-linebreak': ['error', 'after', {
+      overrides: {
+        '?': 'before',
+        ':': 'before',
+      },
+    }],
     'new-cap': ['error', {
       capIsNewExceptions: ['Fastify'],
     }],
