@@ -83,13 +83,12 @@ export class AIService {
       }
 
       // Parse JSON response
-      const jsonMatch = textContent.text.match(/\{[\s\S]*\}/);
+      const jsonMatch = textContent.text.match(/\{[\s\S]*}/);
       if (!jsonMatch) {
         throw new Error('No JSON found in AI response');
       }
 
-      const verificationData = JSON.parse(jsonMatch[0]);
-      return verificationData;
+      return JSON.parse(jsonMatch[0]);
     } catch (error) {
       throw new Error(
         `AI verification failed: ${error instanceof Error ? error.message : 'Unknown error'}`

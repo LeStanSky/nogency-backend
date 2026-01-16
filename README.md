@@ -2,7 +2,7 @@
 
 Backend API для платформы управления арендой недвижимости с AI-скорингом арендаторов.
 
-**Статус:** 🚀 Authentication & Profile Management APIs реализованы | Database полностью настроена
+**Статус:** Production-Ready | 175 тестов | 86%+ coverage
 
 ## Технологический стек
 
@@ -12,110 +12,110 @@ Backend API для платформы управления арендой нед
 - **Database:** PostgreSQL 15 (Supabase)
 - **ORM:** Prisma 5.x
 - **Testing:** Vitest (TDD approach)
-- **AI Integration:** Anthropic Claude API
+- **AI Integration:** Anthropic Claude API (Vision + Text)
 - **Payments:** Stripe
 - **Email:** Resend
 - **File Storage:** Supabase Storage
 - **Authentication:** JWT + bcrypt
 
-## ✅ Реализованные функции (Updated: 2026-01-04)
+## Реализованные API (Updated: 2026-01-16)
 
-### Infrastructure
+### Authentication API
 
-- [x] Fastify application setup
-- [x] Prisma ORM with full schema (26 models)
-- [x] Supabase connection (PostgreSQL + Storage)
-- [x] Vitest testing framework
-- [x] ESLint (Google Style) + Prettier
-- [x] Git hooks (Husky + lint-staged)
+| Method | Endpoint                | Description                  |
+| ------ | ----------------------- | ---------------------------- |
+| POST   | `/api/v1/auth/register` | User registration with JWT   |
+| POST   | `/api/v1/auth/login`    | User login with JWT          |
+| GET    | `/api/v1/auth/me`       | Get current user (protected) |
 
-### API Endpoints
+### Profile Management API
 
-#### Authentication API ✅
+| Method | Endpoint                  | Description                |
+| ------ | ------------------------- | -------------------------- |
+| POST   | `/api/v1/profiles/owner`  | Create owner profile       |
+| POST   | `/api/v1/profiles/tenant` | Create tenant profile      |
+| GET    | `/api/v1/profiles/me`     | Get current user's profile |
+| PATCH  | `/api/v1/profiles/me`     | Update profile             |
 
-- [x] `POST /api/v1/auth/register` - User registration with JWT
-- [x] `POST /api/v1/auth/login` - User login with JWT
-- [x] `GET /api/v1/auth/me` - Get current user (protected)
-- [x] Auth middleware for route protection
-- [x] Password hashing (bcryptjs)
-- [x] Zod validation schemas
-- [x] 10 comprehensive tests (>93% coverage)
+### Document Upload & AI Verification API
 
-#### Profile Management API ✅
+| Method | Endpoint                       | Description                     |
+| ------ | ------------------------------ | ------------------------------- |
+| POST   | `/api/v1/documents`            | Upload document                 |
+| GET    | `/api/v1/documents`            | List user documents             |
+| GET    | `/api/v1/documents/:id`        | Get document details            |
+| DELETE | `/api/v1/documents/:id`        | Delete document                 |
+| POST   | `/api/v1/documents/:id/verify` | AI verification (Claude Vision) |
 
-- [x] `POST /api/v1/profiles/owner` - Create owner profile with auto-role
-- [x] `POST /api/v1/profiles/tenant` - Create tenant profile with auto-role
-- [x] `GET /api/v1/profiles/me` - Get user profile (owner or tenant)
-- [x] `PATCH /api/v1/profiles/me` - Update profile (partial updates)
-- [x] Type-safe Zod validation matching Prisma schema
-- [x] Decimal/Date conversions for tenant profiles
-- [x] 18 comprehensive tests (100% passing)
-- [x] 84.42% overall coverage
+### Property Management API
 
-### Database Schema (26 Models)
+| Method | Endpoint                 | Description             |
+| ------ | ------------------------ | ----------------------- |
+| POST   | `/api/v1/properties`     | Create property         |
+| GET    | `/api/v1/properties`     | List owner's properties |
+| GET    | `/api/v1/properties/:id` | Get property details    |
+| PATCH  | `/api/v1/properties/:id` | Update property         |
+| DELETE | `/api/v1/properties/:id` | Delete property         |
 
-**Core Models:**
+### Listing Management API
 
-- User, UserRole, OwnerProfile, TenantProfile
+| Method | Endpoint                         | Description                       |
+| ------ | -------------------------------- | --------------------------------- |
+| POST   | `/api/v1/listings`               | Create listing from property      |
+| GET    | `/api/v1/listings`               | List all active listings (public) |
+| GET    | `/api/v1/listings/:id`           | Get listing details               |
+| PATCH  | `/api/v1/listings/:id`           | Update listing                    |
+| POST   | `/api/v1/listings/:id/publish`   | Publish listing                   |
+| POST   | `/api/v1/listings/:id/unpublish` | Unpublish listing                 |
 
-**Property Models:**
+### Application & AI Scoring API
 
-- Property, PropertyPhoto, PropertyDocument, PropertyValuation
+| Method | Endpoint                          | Description                    |
+| ------ | --------------------------------- | ------------------------------ |
+| POST   | `/api/v1/applications`            | Submit application             |
+| GET    | `/api/v1/applications`            | List applications              |
+| GET    | `/api/v1/applications/:id`        | Get application details        |
+| POST   | `/api/v1/applications/:id/score`  | AI scoring (Claude)            |
+| PATCH  | `/api/v1/applications/:id/status` | Update status (approve/reject) |
 
-**Listing Models:**
+### Contract Management API
 
-- Listing, ViewingSlot
+| Method | Endpoint                                 | Description                      |
+| ------ | ---------------------------------------- | -------------------------------- |
+| POST   | `/api/v1/contracts`                      | Create contract from application |
+| GET    | `/api/v1/contracts`                      | List contracts                   |
+| GET    | `/api/v1/contracts/:id`                  | Get contract details             |
+| POST   | `/api/v1/contracts/:id/send-for-signing` | Send for signatures              |
+| POST   | `/api/v1/contracts/:id/sign`             | Sign contract                    |
+| POST   | `/api/v1/contracts/:id/terminate`        | Terminate contract               |
 
-**Application Models:**
+### Payment API (Stripe Integration)
 
-- Application, ApplicationDocument, TenantScoring
-
-**Contract & Payment Models:**
-
-- LeaseContract, LeaseEvent, Payment, DepositRecord, CommissionRecord, KeyHandover
-
-**Communication Models:**
-
-- Conversation, ConversationParticipant, Message, Meeting
-
-**Notification Model:**
-
-- Notification
+| Method | Endpoint                         | Description                  |
+| ------ | -------------------------------- | ---------------------------- |
+| POST   | `/api/v1/payments/create-intent` | Create Stripe payment intent |
+| GET    | `/api/v1/payments`               | List payments                |
+| GET    | `/api/v1/payments/:id`           | Get payment details          |
+| POST   | `/api/v1/payments/webhook`       | Stripe webhook handler       |
+| GET    | `/api/v1/contracts/:id/payments` | Get payments by contract     |
 
 ## Структура проекта
 
 ```
 nogency-back/
 ├── src/
-│   ├── routes/          # API маршруты
-│   │   ├── auth.routes.ts        ✅ Implemented
-│   │   └── profile.routes.ts     ✅ Implemented
-│   ├── controllers/     # Контроллеры бизнес-логики
-│   │   ├── auth.controller.ts    ✅ Implemented
-│   │   └── profile.controller.ts ✅ Implemented
-│   ├── services/        # Сервисы (AI, Storage, Email, Auth)
-│   │   ├── auth.service.ts       ✅ Implemented
-│   │   └── profile.service.ts    ✅ Implemented
-│   ├── middleware/      # Middleware (auth, validation)
-│   │   └── auth.middleware.ts    ✅ Implemented
-│   ├── schemas/         # Zod validation schemas
-│   │   ├── auth.schema.ts        ✅ Implemented
-│   │   └── profile.schema.ts     ✅ Implemented
-│   ├── db/              # Database client
-│   │   └── client.ts             ✅ Implemented
-│   ├── types/           # TypeScript типы
-│   │   └── fastify.d.ts          ✅ Implemented
-│   ├── utils/           # Утилиты
-│   ├── config.ts        # Конфигурация приложения
-│   ├── app.ts           # Fastify приложение
-│   └── index.ts         # Точка входа
-├── tests/               # Тесты (Vitest)
-│   ├── app.test.ts      # Health check tests (2 tests)
-│   ├── auth.test.ts     # Auth API tests (10 tests) ✅
-│   └── profiles.test.ts # Profile API tests (18 tests) ✅
-├── prisma/              # Prisma schema и миграции
-│   └── schema.prisma    # Full schema (26 models) ✅
-├── .env.example         # Пример переменных окружения
+│   ├── routes/           # API routes
+│   ├── controllers/      # Business logic
+│   ├── services/         # External services (AI, Storage, Stripe)
+│   ├── middleware/       # Auth middleware
+│   ├── schemas/          # Zod validation
+│   ├── db/               # Prisma client
+│   ├── types/            # TypeScript types
+│   ├── config.ts         # Configuration
+│   ├── app.ts            # Fastify app
+│   └── index.ts          # Entry point
+├── tests/                # Test files (175 tests)
+├── prisma/               # Database schema
 └── package.json
 ```
 
@@ -129,8 +129,6 @@ npm install
 
 ### 2. Настройка окружения
 
-Скопируйте `.env.example` в `.env` и заполните переменные:
-
 ```bash
 cp .env.example .env
 ```
@@ -138,382 +136,95 @@ cp .env.example .env
 **Обязательные переменные:**
 
 ```env
-# Database (Supabase)
-DATABASE_URL=postgresql://postgres:[PASSWORD]@db.xxx.supabase.co:5432/postgres
+DATABASE_URL=postgresql://...
 SUPABASE_URL=https://xxx.supabase.co
 SUPABASE_ANON_KEY=your-anon-key
 SUPABASE_SERVICE_KEY=your-service-role-key
-
-# JWT Authentication
-JWT_SECRET=your-jwt-secret-here-change-in-production
-JWT_EXPIRES_IN=7d
-
-# AI Integration (optional for now)
+JWT_SECRET=your-jwt-secret
 ANTHROPIC_API_KEY=sk-ant-xxx
-
-# Payments (optional for now)
 STRIPE_SECRET_KEY=sk_test_xxx
 STRIPE_WEBHOOK_SECRET=whsec_xxx
-
-# Email (optional for now)
-RESEND_API_KEY=re_xxx
-
-# Frontend
 FRONTEND_URL=http://localhost:3000
 ```
 
-### 3. Настройка базы данных
+### 3. База данных
 
 ```bash
-# Генерация Prisma Client
-npm run db:generate
-
-# Применение schema (dev mode)
-npm run db:push
-
-# Открыть Prisma Studio (GUI для БД)
-npm run db:studio
+npm run db:generate    # Generate Prisma Client
+npm run db:push        # Push schema (dev)
+npm run db:studio      # Open Prisma Studio
 ```
 
-Prisma Studio откроется на **http://localhost:5556**
-
-### 4. Запуск в режиме разработки
+### 4. Запуск
 
 ```bash
-npm run dev
+npm run dev            # Development (port 8000)
+npm run build          # Build
+npm start              # Production
 ```
 
-Сервер запустится на **http://localhost:8000**
-
-### 5. Запуск тестов
+### 5. Тесты
 
 ```bash
-# Watch mode (рекомендуется для TDD)
-npm test
-
-# Run once
-npm test -- --run
-
-# With coverage
-npm run test:coverage
-
-# With UI
-npm run test:ui
+npm test               # Watch mode
+npm test -- --run      # Single run
+npm run test:coverage  # With coverage
 ```
 
 ## Команды NPM
 
-### Разработка
-
-- `npm run dev` - Запуск dev сервера с hot-reload (port 8000)
-- `npm run build` - Сборка production версии
-- `npm start` - Запуск production сервера
-
-### Тестирование (TDD)
-
-- `npm test` - Запуск тестов в watch mode ⭐
-- `npm run test:ui` - Запуск тестов с UI интерфейсом
-- `npm run test:coverage` - Запуск тестов с coverage report
-
-### База данных
-
-- `npm run db:generate` - Генерация Prisma Client
-- `npm run db:push` - Быстрый push схемы (для dev) ⭐
-- `npm run db:migrate` - Создание миграций (для production)
-- `npm run db:studio` - Открыть Prisma Studio (http://localhost:5556)
-
-### Code Quality
-
-- `npm run lint` - Проверка кода ESLint (Google Style)
-- `npm run lint -- --fix` - Автоисправление ошибок
-- `npm run format` - Форматирование кода Prettier
-
-### Версионирование
-
-- `npm run release:patch` - Patch version (1.0.0 → 1.0.1)
-- `npm run release:minor` - Minor version (1.0.0 → 1.1.0)
-- `npm run release:major` - Major version (1.0.0 → 2.0.0)
-
-## API Endpoints
-
-### ✅ Authentication (Implemented)
-
-| Method | Endpoint                | Description       | Auth Required |
-| ------ | ----------------------- | ----------------- | ------------- |
-| POST   | `/api/v1/auth/register` | Register new user | No            |
-| POST   | `/api/v1/auth/login`    | Login user        | No            |
-| GET    | `/api/v1/auth/me`       | Get current user  | Yes           |
-
-**Example: Register**
-
-```bash
-curl -X POST http://localhost:8000/api/v1/auth/register \
-  -H "Content-Type: application/json" \
-  -d '{
-    "email": "user@example.com",
-    "password": "SecurePass123!",
-    "role": "TENANT"
-  }'
-```
-
-**Response:**
-
-```json
-{
-  "user": {
-    "id": "uuid",
-    "email": "user@example.com",
-    "phone": null,
-    "isEmailVerified": false,
-    "createdAt": "2026-01-04T..."
-  },
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
-}
-```
-
-### ✅ Profile Management (Implemented)
-
-| Method | Endpoint                  | Description                | Auth Required |
-| ------ | ------------------------- | -------------------------- | ------------- |
-| POST   | `/api/v1/profiles/owner`  | Create owner profile       | Yes           |
-| POST   | `/api/v1/profiles/tenant` | Create tenant profile      | Yes           |
-| GET    | `/api/v1/profiles/me`     | Get current user's profile | Yes           |
-| PATCH  | `/api/v1/profiles/me`     | Update profile (partial)   | Yes           |
-
-**Example: Create Owner Profile**
-
-```bash
-curl -X POST http://localhost:8000/api/v1/profiles/owner \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN" \
-  -d '{
-    "firstName": "John",
-    "lastName": "Doe",
-    "documentType": "DNI",
-    "documentNumber": "12345678A",
-    "bankAccountIban": "ES1234567890123456789012"
-  }'
-```
-
-**Example: Get Profile**
-
-```bash
-curl -X GET http://localhost:8000/api/v1/profiles/me \
-  -H "Authorization: Bearer YOUR_JWT_TOKEN"
-```
-
-**Response:**
-
-```json
-{
-  "type": "owner",
-  "profile": {
-    "id": "uuid",
-    "userId": "user-uuid",
-    "firstName": "John",
-    "lastName": "Doe",
-    "documentType": "DNI",
-    "documentNumber": "12345678A",
-    "isCompany": false,
-    "bankAccountIban": "ES1234567890123456789012",
-    "createdAt": "2026-01-04T...",
-    "updatedAt": "2026-01-04T..."
-  }
-}
-```
-
-### 📝 Planned Endpoints
-
-#### Document Upload (Week 1-2)
-
-- `POST /api/v1/documents` - Upload document
-- `GET /api/v1/documents` - List user documents
-- `GET /api/v1/documents/:id` - Get document details
-- `DELETE /api/v1/documents/:id` - Delete document
-- `POST /api/v1/documents/:id/verify` - AI verification
-
-#### Property & Listings (Week 3-4)
-
-- `POST /api/v1/properties` - Create property
-- `GET /api/v1/properties` - List owner's properties
-- `POST /api/v1/listings` - Create listing
-- `GET /api/v1/listings` - List active listings (public)
-
-#### Applications (Week 3-4)
-
-- `POST /api/v1/applications` - Submit application
-- `GET /api/v1/applications` - List applications
-- `POST /api/v1/applications/:id/score` - AI scoring
-
-#### Contracts & Payments (Week 5-6)
-
-- `POST /api/v1/contracts` - Create contract
-- `POST /api/v1/payments/create-intent` - Stripe payment
-- `POST /api/v1/payments/webhook` - Stripe webhook
-
-## Git Hooks (Code Quality)
-
-### Pre-commit Hook (All branches)
-
-- ✅ ESLint (Google Style Guide) + auto-fix
-- ✅ Prettier formatting
-- ✅ Only staged files checked
-
-**Коммит блокируется** если есть ошибки линтинга.
-
-### Pre-push Hook (Master only)
-
-- ✅ Full ESLint check
-- ✅ All tests with coverage
-- ✅ TypeScript build
-
-**Push в master блокируется** если тесты не проходят.
-
-📖 Подробнее: [HOOKS.md](./HOOKS.md) | Краткая справка: [HOOKS-SUMMARY.md](./HOOKS-SUMMARY.md)
+| Command                 | Description             |
+| ----------------------- | ----------------------- |
+| `npm run dev`           | Dev server (hot-reload) |
+| `npm run build`         | Build production        |
+| `npm start`             | Run production          |
+| `npm test`              | Tests (watch mode)      |
+| `npm run test:coverage` | Tests with coverage     |
+| `npm run lint`          | ESLint check            |
+| `npm run format`        | Prettier format         |
+| `npm run db:generate`   | Generate Prisma Client  |
+| `npm run db:push`       | Push schema             |
+| `npm run db:studio`     | Prisma Studio GUI       |
 
 ## Git Workflow
 
-- **`master`** - production ветка (только stable код)
-- **`dev`** - основная разработка (текущая ветка)
-- **`feature/*`** - опциональные feature ветки
+- **`master`** - Production (protected)
+- **`dev`** - Development (current)
 
-📖 Подробнее: [GIT-WORKFLOW.md](./GIT-WORKFLOW.md)
+**Git Hooks:**
 
-## Разработка с TDD
+- Pre-commit: ESLint + Prettier
+- Pre-push (master only): Full tests + build
 
-### TDD Процесс (Red-Green-Refactor)
+## Test Coverage
 
-1. **🔴 Red** - Написать failing тест
-2. **🟢 Green** - Написать минимальный код для прохождения
-3. **♻️ Refactor** - Улучшить код
-
-### Пример workflow
-
-```bash
-# 1. Запустить тесты в watch mode
-npm test
-
-# 2. Создать failing тест
-# tests/profiles.test.ts
-
-# 3. Тест fails (RED)
-npm test -- profiles.test.ts --run  # ❌ Fails
-
-# 4. Написать реализацию
-# src/services/profile.service.ts
-# src/controllers/profile.controller.ts
-# src/routes/profile.routes.ts
-
-# 5. Тесты проходят (GREEN)
-npm test -- profiles.test.ts --run  # ✅ Pass
-
-# 6. Refactor + Coverage check
-npm run test:coverage
-
-# 7. Commit
-git add .
-git commit -m "feat: implement profile management API"
-```
-
-## Test Coverage Goals
-
-**Минимальные требования:**
-
-- Overall: >80%
-- Services: >90%
-- Controllers: >85%
-- Routes: 100%
-
-**Текущий статус:**
-
-- Overall: 84.42% ✅
-- Services: 97.27% ✅
-- Controllers: 72.11%
-- Routes: 100% ✅
-
-## Следующие шаги разработки
-
-### Week 1-2: Document Upload & AI Verification
-
-**📝 Что делать дальше:**
-
-1. **Document Upload API** (Day 5-7)
-   - Настроить Supabase Storage buckets
-   - POST /documents endpoint (multipart upload)
-   - GET /documents (list user documents)
-   - DELETE /documents/:id
-   - File validation (PDF, JPG, PNG, max 10MB)
-   - TDD workflow
-
-2. **AI Document Verification** (Day 8-10)
-   - Интеграция Claude Vision API
-   - POST /documents/:id/verify
-   - Extract structured data from DNI/NIE/TIE
-   - Update document verification status
-   - Save extracted data to database
-
-📖 Подробный план: [NEXT-STEPS.md](./NEXT-STEPS.md)
-
-## Требования к окружению
-
-- Node.js >= 20.0.0
-- npm >= 10.0.0
-- PostgreSQL 15+ (или Supabase аккаунт)
-- Git
-
-## Безопасность
-
-- ✅ Все sensitive данные в `.env` (не коммитить!)
-- ✅ JWT tokens для аутентификации (7 days expiry)
-- ✅ Password hashing с bcrypt (10 rounds)
-- ✅ CORS настроен на frontend URL
-- ✅ File uploads ограничены 10MB
-- ✅ Input validation через Zod schemas
-- ✅ Prepared statements через Prisma (SQL injection protection)
-
-## Deployment (Planned)
-
-Рекомендуемые платформы:
-
-- **Railway.app** ($5/месяц, PostgreSQL included)
-- **Render.com** (бесплатный tier)
-- **Fly.io** (бесплатный tier)
-
-### Environment Variables для production:
-
-```env
-NODE_ENV=production
-DATABASE_URL=<production-database-url>
-JWT_SECRET=<strong-random-secret>
-FRONTEND_URL=https://your-frontend.com
-```
+- **175 tests** across 10 test files
+- **86%+ overall coverage**
+- All APIs fully tested
 
 ## Документация
 
-- 📖 [NEXT-STEPS.md](./NEXT-STEPS.md) - Детальный план разработки
-- 📖 [GIT-WORKFLOW.md](./GIT-WORKFLOW.md) - Git workflow и branching
-- 📖 [HOOKS.md](./HOOKS.md) - Git hooks конфигурация
-- 📖 [CLAUDE.md](./CLAUDE.md) - Инструкции для Claude Code
+- [NEXT-STEPS.md](./NEXT-STEPS.md) - Development roadmap
+- [GIT-WORKFLOW.md](./GIT-WORKFLOW.md) - Git workflow
+- [HOOKS.md](./HOOKS.md) - Git hooks
+- [CLAUDE.md](./CLAUDE.md) - Claude Code instructions
 
-## Полезные ресурсы
+## Безопасность
 
-- **Prisma Docs:** https://www.prisma.io/docs
-- **Fastify Docs:** https://fastify.dev/docs
-- **Vitest Docs:** https://vitest.dev
-- **Zod Docs:** https://zod.dev
-- **Supabase Docs:** https://supabase.com/docs
-- **Anthropic Claude API:** https://docs.anthropic.com/claude/reference
+- JWT authentication (7 days expiry)
+- Password hashing (bcrypt, 10 rounds)
+- CORS configured for frontend
+- File uploads limited to 10MB
+- Input validation via Zod
+- SQL injection protection via Prisma
+- Stripe webhook signature verification
 
-## Лицензия
+## License
 
 MIT
 
-## Автор
-
-Stas - NoGency AI Team
-
 ---
 
-**Last Updated:** 2026-01-04
-**Current Version:** 1.0.0
-**Status:** ✅ Authentication & Profile Management Complete | 🚀 Ready for Document Upload
+**Last Updated:** 2026-01-16
+**Version:** 1.0.0
+**Tests:** 175 passing

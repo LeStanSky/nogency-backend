@@ -8,6 +8,8 @@ NoGency AI is a backend API for a rental property management platform with AI-po
 
 **Tech Stack:** Node.js 20+, TypeScript 5+, Fastify 4.x, Prisma 5.x, PostgreSQL 15, Vitest
 
+**Current Status:** Production-ready with 175 tests, 86%+ coverage
+
 ## Essential Commands
 
 ### Development
@@ -90,29 +92,45 @@ npm run format           # Format with Prettier
 
 **Config:** `src/config.ts` - Centralized configuration from environment variables
 
-**Planned Structure:**
+**Project Structure:**
 
 ```
 src/
 ├── routes/          # Fastify route handlers
 ├── controllers/     # Business logic layer
-├── services/        # External services (AI, Storage, Email)
-├── middleware/      # Auth, validation middleware
+├── services/        # External services (AI, Storage, Stripe)
+├── middleware/      # Auth middleware
+├── schemas/         # Zod validation schemas
 ├── db/              # Prisma client singleton
 ├── types/           # Shared TypeScript types
 └── utils/           # Helper functions
 ```
 
+### Implemented APIs
+
+All APIs are fully implemented with tests:
+
+1. **Auth API** (`/api/v1/auth`) - Registration, login, JWT tokens
+2. **Profile API** (`/api/v1/profiles`) - Owner/tenant profiles
+3. **Documents API** (`/api/v1/documents`) - Upload, AI verification (Claude Vision)
+4. **Properties API** (`/api/v1/properties`) - Property CRUD
+5. **Listings API** (`/api/v1/listings`) - Listing management, publish/unpublish
+6. **Applications API** (`/api/v1/applications`) - Applications with AI scoring
+7. **Contracts API** (`/api/v1/contracts`) - Contract lifecycle, signing
+8. **Payments API** (`/api/v1/payments`) - Stripe integration, webhooks
+
 ### Database Schema (Prisma)
 
 **Core Models:**
 
-- `Profile` - User accounts (OWNER/TENANT/ADMIN roles)
-- `Document` - Uploaded documents with AI verification status
-- `Listing` - Property listings (DRAFT/ACTIVE/RENTED/INACTIVE)
-- `Application` - Tenant applications with AI scoring
-- `Contract` - Rental contracts with dual signing
-- `Payment` - Stripe payment tracking
+- `User`, `UserRole` - Authentication
+- `OwnerProfile`, `TenantProfile` - User profiles
+- `Document` - Uploaded documents with AI verification
+- `Property`, `PropertyPhoto` - Properties
+- `Listing`, `ViewingSlot` - Listings
+- `Application`, `TenantScoring` - Applications with AI scores
+- `LeaseContract`, `LeaseEvent` - Contracts
+- `Payment`, `DepositRecord` - Payments
 
 **Key Patterns:**
 
@@ -137,7 +155,8 @@ npm run db:migrate   # Create migration for production
 - Tests in `tests/` directory
 - File naming: `*.test.ts`
 - Setup file: `tests/setup.ts`
-- Coverage thresholds: Target >80%
+- 175 tests across 10 files
+- Coverage: 86%+
 
 **TDD Cycle:**
 
@@ -169,6 +188,7 @@ SUPABASE_SERVICE_KEY      # Service role key (admin)
 JWT_SECRET                # Secret for JWT signing
 ANTHROPIC_API_KEY         # Claude API key
 STRIPE_SECRET_KEY         # Stripe secret
+STRIPE_WEBHOOK_SECRET     # Stripe webhook secret
 RESEND_API_KEY            # Email service
 FRONTEND_URL              # CORS allowed origin
 ```
@@ -195,7 +215,7 @@ Copy `.env.example` to `.env` and fill in values.
 
 ```typescript
 export default async function routes(app: FastifyInstance) {
-  app.get('/endpoint', async (request, reply) => {
+  app.get('/endpoint', { preHandler: authMiddleware }, async (request, reply) => {
     return { data: 'value' };
   });
 }
@@ -204,10 +224,10 @@ export default async function routes(app: FastifyInstance) {
 **Prisma Client Usage:**
 
 ```typescript
-import { prisma } from './db/client.js'; // Singleton instance
+import { prisma } from './db/client.js';
 
-const user = await prisma.profile.create({
-  data: { email: 'test@example.com' },
+const user = await prisma.user.findUnique({
+  where: { id: userId },
 });
 ```
 
@@ -222,7 +242,21 @@ const apiKey = config.anthropic.apiKey;
 **Error Handling:**
 
 ```typescript
-reply.code(400).send({ error: 'Message' });
+if (!resource) {
+  return reply.code(404).send({ error: 'Not found' });
+}
+```
+
+**Zod Validation:**
+
+```typescript
+const parseResult = schema.safeParse(request.body);
+if (!parseResult.success) {
+  return reply.code(400).send({
+    error: 'Validation failed',
+    details: parseResult.error.flatten().fieldErrors,
+  });
+}
 ```
 
 ## Important Notes
@@ -235,10 +269,11 @@ reply.code(400).send({ error: 'Message' });
 - **Database:** PostgreSQL 15+ required, hosted on Supabase
 - **Node Version:** 20+ required (specified in package.json engines)
 
-## Planned Features (Roadmap)
+## Next Steps (Roadmap)
 
-**Week 1-2:** Auth API, Document Upload, AI Verification
-**Week 3-4:** Listings CRUD, Applications, AI Scoring
-**Week 5-6:** Contracts, Payments (Stripe)
+See [NEXT-STEPS.md](./NEXT-STEPS.md) for detailed roadmap:
 
-See README.md for detailed implementation plan.
+- Plaid Integration (Income Verification)
+- API Documentation (Swagger/OpenAPI)
+- Rate Limiting
+- Email Notifications (Resend)
