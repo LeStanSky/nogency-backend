@@ -5,6 +5,7 @@ import {
   ContractQueryInput,
 } from '../schemas/contract.schema.js';
 import { nanoid } from 'nanoid';
+import { Prisma, ContractStatus } from '@prisma/client';
 
 export class ContractService {
   /**
@@ -134,10 +135,7 @@ export class ContractService {
       where: { userId },
     });
 
-    const where: {
-      status?: string;
-      OR?: Array<{ ownerId?: string; tenantId?: string }>;
-    } = {};
+    const where: Prisma.LeaseContractWhereInput = {};
 
     // Filter by owner or tenant
     const orConditions: Array<{ ownerId?: string; tenantId?: string }> = [];
@@ -156,7 +154,7 @@ export class ContractService {
 
     // Filter by status
     if (query.status) {
-      where.status = query.status;
+      where.status = query.status as ContractStatus;
     }
 
     const [contracts, total] = await Promise.all([

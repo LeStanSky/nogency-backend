@@ -64,6 +64,9 @@ export class ContractController {
   static async getContracts(request: FastifyRequest, reply: FastifyReply) {
     try {
       const userId = request.userId;
+      if (!userId) {
+        return reply.code(401).send({ error: 'Unauthorized' });
+      }
 
       // Validate query params
       const parseResult = contractQuerySchema.safeParse(request.query);
@@ -90,6 +93,9 @@ export class ContractController {
   static async getContractById(request: FastifyRequest, reply: FastifyReply) {
     try {
       const userId = request.userId;
+      if (!userId) {
+        return reply.code(401).send({ error: 'Unauthorized' });
+      }
       const { id } = request.params as { id: string };
 
       const contract = await ContractService.getContractById(id, userId);
@@ -159,6 +165,9 @@ export class ContractController {
   static async signContract(request: FastifyRequest, reply: FastifyReply) {
     try {
       const userId = request.userId;
+      if (!userId) {
+        return reply.code(401).send({ error: 'Unauthorized' });
+      }
       const { id } = request.params as { id: string };
 
       const contract = await ContractService.signContract(id, userId);

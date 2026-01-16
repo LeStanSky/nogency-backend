@@ -41,9 +41,6 @@ export class DocumentsController {
       ) {
         // Handle serialized Buffer object from tests
         fileBuffer = Buffer.from(body.file.data);
-      } else if (body.file) {
-        // Try to convert to Buffer
-        fileBuffer = Buffer.from(body.file);
       } else {
         return reply.code(400).send({
           error: 'File is required',

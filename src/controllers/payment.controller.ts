@@ -57,6 +57,9 @@ export class PaymentController {
   static async getPayments(request: FastifyRequest, reply: FastifyReply) {
     try {
       const userId = request.userId;
+      if (!userId) {
+        return reply.code(401).send({ error: 'Unauthorized' });
+      }
 
       // Validate query params
       const parseResult = paymentQuerySchema.safeParse(request.query);
@@ -83,6 +86,9 @@ export class PaymentController {
   static async getPaymentById(request: FastifyRequest, reply: FastifyReply) {
     try {
       const userId = request.userId;
+      if (!userId) {
+        return reply.code(401).send({ error: 'Unauthorized' });
+      }
       const { id } = request.params as { id: string };
 
       const payment = await PaymentService.getPaymentById(id, userId);
@@ -111,6 +117,9 @@ export class PaymentController {
   static async getPaymentsByContract(request: FastifyRequest, reply: FastifyReply) {
     try {
       const userId = request.userId;
+      if (!userId) {
+        return reply.code(401).send({ error: 'Unauthorized' });
+      }
       const { id } = request.params as { id: string };
 
       const result = await PaymentService.getPaymentsByContract(id, userId);

@@ -2,6 +2,7 @@ import Stripe from 'stripe';
 import { prisma } from '../db/client.js';
 import { config } from '../config.js';
 import { CreatePaymentIntentInput, PaymentQueryInput } from '../schemas/payment.schema.js';
+import { Prisma, PaymentType } from '@prisma/client';
 
 const stripe = new Stripe(config.stripe.secretKey);
 
@@ -85,12 +86,7 @@ export class PaymentService {
       where: { userId },
     });
 
-    const where: {
-      status?: string;
-      type?: string;
-      contractId?: string;
-      OR?: Array<{ ownerId?: string; tenantId?: string }>;
-    } = {};
+    const where: Prisma.PaymentWhereInput = {};
 
     // Filter by owner or tenant
     const orConditions: Array<{ ownerId?: string; tenantId?: string }> = [];
@@ -112,7 +108,7 @@ export class PaymentService {
       where.status = query.status;
     }
     if (query.type) {
-      where.type = query.type;
+      where.type = query.type as PaymentType;
     }
     if (query.contractId) {
       where.contractId = query.contractId;
