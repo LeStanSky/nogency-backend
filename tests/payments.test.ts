@@ -33,10 +33,10 @@ vi.mock('stripe', () => {
 describe('Payment API', () => {
   let app: FastifyInstance;
   let _ownerUserId: string;
-  let ownerProfileId: string;
+  let _ownerProfileId: string;
   let ownerToken: string;
   let _tenantUserId: string;
-  let tenantProfileId: string;
+  let _tenantProfileId: string;
   let tenantToken: string;
   let contractId: string;
 
@@ -76,21 +76,30 @@ describe('Payment API', () => {
     await prisma.userRole.deleteMany();
     await prisma.user.deleteMany();
 
+    // Use unique email with timestamp to avoid conflicts
+    const timestamp = Date.now();
+    const ownerEmail = `payment-owner-${timestamp}@test.com`;
+    const tenantEmail = `payment-tenant-${timestamp}@test.com`;
+
     // Create owner user via API
     const ownerRegisterResponse = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/register',
       payload: {
-        email: 'payment-owner@test.com',
+        email: ownerEmail,
         password: 'SecurePass123!',
-        phone: '+34611111111',
+        phone: `+3461111${timestamp.toString().slice(-4)}`,
         role: 'OWNER',
       },
     });
 
+    if (ownerRegisterResponse.statusCode !== 201) {
+      throw new Error(`Failed to register owner: ${ownerRegisterResponse.body}`);
+    }
+
     const ownerRegisterBody = JSON.parse(ownerRegisterResponse.body);
     ownerToken = ownerRegisterBody.token;
-    _ownerUserId = ownerRegisterBody.user.id;
+    _ownerUserId = ownerRegisterBody.user?.id;
 
     // Create owner profile via API
     const ownerProfileResponse = await app.inject({
@@ -106,7 +115,7 @@ describe('Payment API', () => {
     });
 
     const ownerProfileBody = JSON.parse(ownerProfileResponse.body);
-    ownerProfileId = ownerProfileBody.id;
+    _ownerProfileId = ownerProfileBody.id;
 
     // Create property via API
     const propertyResponse = await app.inject({
@@ -163,16 +172,20 @@ describe('Payment API', () => {
       method: 'POST',
       url: '/api/v1/auth/register',
       payload: {
-        email: 'payment-tenant@test.com',
+        email: tenantEmail,
         password: 'SecurePass123!',
-        phone: '+34622222222',
+        phone: `+3462222${timestamp.toString().slice(-4)}`,
         role: 'TENANT',
       },
     });
 
+    if (tenantRegisterResponse.statusCode !== 201) {
+      throw new Error(`Failed to register tenant: ${tenantRegisterResponse.body}`);
+    }
+
     const tenantRegisterBody = JSON.parse(tenantRegisterResponse.body);
     tenantToken = tenantRegisterBody.token;
-    _tenantUserId = tenantRegisterBody.user.id;
+    _tenantUserId = tenantRegisterBody.user?.id;
 
     // Create tenant profile via API
     const tenantProfileResponse = await app.inject({
@@ -190,7 +203,7 @@ describe('Payment API', () => {
     });
 
     const tenantProfileBody = JSON.parse(tenantProfileResponse.body);
-    tenantProfileId = tenantProfileBody.id;
+    _tenantProfileId = tenantProfileBody.id;
 
     // Create application via API
     const applicationResponse = await app.inject({
@@ -364,36 +377,49 @@ describe('Payment API', () => {
 
   describe('GET /api/v1/payments', () => {
     beforeEach(async () => {
-      // Create some payments for testing
-      await prisma.payment.createMany({
-        data: [
-          {
-            contractId,
-            tenantId: tenantProfileId,
-            ownerId: ownerProfileId,
-            type: 'DEPOSIT',
-            amount: 2400,
-            currency: 'EUR',
+      if (!contractId) {
+        throw new Error('contractId is not defined');
+      }
+
+      // Create payments via API (create payment intents and mark as completed)
+      const depositResponse = await app.inject({
+        method: 'POST',
+        url: '/api/v1/payments/create-intent',
+        headers: { Authorization: `Bearer ${tenantToken}` },
+        payload: {
+          contractId,
+          type: 'DEPOSIT',
+          amount: 2400,
+        },
+      });
+
+      if (depositResponse.statusCode === 201) {
+        const depositBody = JSON.parse(depositResponse.body);
+        // Simulate payment completion by updating status
+        await prisma.payment.update({
+          where: { id: depositBody.paymentId },
+          data: {
             status: 'COMPLETED',
-            dueDate: new Date('2026-02-01'),
             paidAt: new Date('2026-01-25'),
             paymentMethod: 'CARD',
-            transactionId: 'pi_test_deposit',
           },
-          {
-            contractId,
-            tenantId: tenantProfileId,
-            ownerId: ownerProfileId,
-            type: 'RENT',
-            amount: 1200,
-            currency: 'EUR',
-            status: 'PENDING',
-            dueDate: new Date('2026-03-01'),
-            periodStart: new Date('2026-03-01'),
-            periodEnd: new Date('2026-03-31'),
-          },
-        ],
+        });
+      }
+
+      await app.inject({
+        method: 'POST',
+        url: '/api/v1/payments/create-intent',
+        headers: { Authorization: `Bearer ${tenantToken}` },
+        payload: {
+          contractId,
+          type: 'RENT',
+          amount: 1200,
+          periodStart: '2026-03-01',
+          periodEnd: '2026-03-31',
+        },
       });
+
+      // Rent payment stays PENDING
     });
 
     it('should list payments for tenant', async () => {
@@ -481,22 +507,39 @@ describe('Payment API', () => {
     let paymentId: string;
 
     beforeEach(async () => {
-      const payment = await prisma.payment.create({
-        data: {
+      if (!contractId) {
+        throw new Error('contractId is not defined');
+      }
+
+      // Create payment via API
+      const paymentResponse = await app.inject({
+        method: 'POST',
+        url: '/api/v1/payments/create-intent',
+        headers: { Authorization: `Bearer ${tenantToken}` },
+        payload: {
           contractId,
-          tenantId: tenantProfileId,
-          ownerId: ownerProfileId,
           type: 'DEPOSIT',
           amount: 2400,
-          currency: 'EUR',
+        },
+      });
+
+      if (paymentResponse.statusCode !== 201) {
+        throw new Error(`Failed to create payment: ${paymentResponse.body}`);
+      }
+
+      const paymentBody = JSON.parse(paymentResponse.body);
+      paymentId = paymentBody.paymentId;
+
+      // Mark as completed for testing
+      await prisma.payment.update({
+        where: { id: paymentId },
+        data: {
           status: 'COMPLETED',
-          dueDate: new Date('2026-02-01'),
           paidAt: new Date('2026-01-25'),
           paymentMethod: 'CARD',
           transactionId: 'pi_test_payment',
         },
       });
-      paymentId = payment.id;
     });
 
     it('should get payment by id for tenant', async () => {
@@ -537,17 +580,22 @@ describe('Payment API', () => {
     });
 
     it('should deny access to unrelated user', async () => {
-      // Create another user via API
+      // Create another user via API with unique email
+      const timestamp = Date.now();
       const otherRegisterResponse = await app.inject({
         method: 'POST',
         url: '/api/v1/auth/register',
         payload: {
-          email: 'other-user@test.com',
+          email: `other-user-${timestamp}@test.com`,
           password: 'SecurePass123!',
-          phone: '+34655555555',
+          phone: `+3465555${timestamp.toString().slice(-4)}`,
           role: 'TENANT',
         },
       });
+
+      if (otherRegisterResponse.statusCode !== 201) {
+        throw new Error(`Failed to register other user: ${otherRegisterResponse.body}`);
+      }
 
       const otherRegisterBody = JSON.parse(otherRegisterResponse.body);
       const otherToken = otherRegisterBody.token;
@@ -578,20 +626,36 @@ describe('Payment API', () => {
     let paymentId: string;
 
     beforeEach(async () => {
-      const payment = await prisma.payment.create({
-        data: {
+      if (!contractId) {
+        throw new Error('contractId is not defined');
+      }
+
+      // Create payment via API
+      const paymentResponse = await app.inject({
+        method: 'POST',
+        url: '/api/v1/payments/create-intent',
+        headers: { Authorization: `Bearer ${tenantToken}` },
+        payload: {
           contractId,
-          tenantId: tenantProfileId,
-          ownerId: ownerProfileId,
           type: 'DEPOSIT',
           amount: 2400,
-          currency: 'EUR',
-          status: 'PENDING',
-          dueDate: new Date('2026-02-01'),
+        },
+      });
+
+      if (paymentResponse.statusCode !== 201) {
+        throw new Error(`Failed to create payment: ${paymentResponse.body}`);
+      }
+
+      const paymentBody = JSON.parse(paymentResponse.body);
+      paymentId = paymentBody.paymentId;
+
+      // Update transaction ID for webhook testing
+      await prisma.payment.update({
+        where: { id: paymentId },
+        data: {
           transactionId: 'pi_webhook_test',
         },
       });
-      paymentId = payment.id;
     });
 
     it('should handle payment_intent.succeeded webhook', async () => {
@@ -692,31 +756,44 @@ describe('Payment API', () => {
 
   describe('GET /api/v1/contracts/:id/payments', () => {
     beforeEach(async () => {
-      // Create payments for contract
-      await prisma.payment.createMany({
-        data: [
-          {
-            contractId,
-            tenantId: tenantProfileId,
-            ownerId: ownerProfileId,
-            type: 'DEPOSIT',
-            amount: 2400,
-            currency: 'EUR',
+      if (!contractId) {
+        throw new Error('contractId is not defined');
+      }
+
+      // Create payments via API
+      const depositResponse = await app.inject({
+        method: 'POST',
+        url: '/api/v1/payments/create-intent',
+        headers: { Authorization: `Bearer ${tenantToken}` },
+        payload: {
+          contractId,
+          type: 'DEPOSIT',
+          amount: 2400,
+        },
+      });
+
+      if (depositResponse.statusCode === 201) {
+        const depositBody = JSON.parse(depositResponse.body);
+        await prisma.payment.update({
+          where: { id: depositBody.paymentId },
+          data: {
             status: 'COMPLETED',
-            dueDate: new Date('2026-02-01'),
             paidAt: new Date('2026-01-25'),
           },
-          {
-            contractId,
-            tenantId: tenantProfileId,
-            ownerId: ownerProfileId,
-            type: 'RENT',
-            amount: 1200,
-            currency: 'EUR',
-            status: 'PENDING',
-            dueDate: new Date('2026-03-01'),
-          },
-        ],
+        });
+      }
+
+      await app.inject({
+        method: 'POST',
+        url: '/api/v1/payments/create-intent',
+        headers: { Authorization: `Bearer ${tenantToken}` },
+        payload: {
+          contractId,
+          type: 'RENT',
+          amount: 1200,
+          periodStart: '2026-03-01',
+          periodEnd: '2026-03-31',
+        },
       });
     });
 

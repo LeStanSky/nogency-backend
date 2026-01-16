@@ -32,21 +32,30 @@ describe('Property CRUD API', () => {
     await prisma.userRole.deleteMany({});
     await prisma.user.deleteMany({});
 
+    // Use unique email with timestamp to avoid conflicts
+    const timestamp = Date.now();
+    const ownerEmail = `owner-${timestamp}@example.com`;
+    const tenantEmail = `tenant-${timestamp}@example.com`;
+
     // Create owner user
     const ownerResponse = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/register',
       payload: {
-        email: 'owner@example.com',
+        email: ownerEmail,
         password: 'SecurePass123!',
-        phone: '+34612345678',
+        phone: `+3461234${timestamp.toString().slice(-4)}`,
         role: 'OWNER',
       },
     });
 
+    if (ownerResponse.statusCode !== 201) {
+      throw new Error(`Failed to register owner: ${ownerResponse.body}`);
+    }
+
     const ownerBody = JSON.parse(ownerResponse.body);
     ownerToken = ownerBody.token;
-    _ownerId = ownerBody.user.id;
+    _ownerId = ownerBody.user?.id;
 
     // Create owner profile
     const ownerProfileResponse = await app.inject({
@@ -59,10 +68,14 @@ describe('Property CRUD API', () => {
         firstName: 'John',
         lastName: 'Owner',
         documentType: 'DNI',
-        documentNumber: '12345678A',
+        documentNumber: `12345678${timestamp.toString().slice(-1)}`,
         isCompany: false,
       },
     });
+
+    if (ownerProfileResponse.statusCode !== 201) {
+      throw new Error(`Failed to create owner profile: ${ownerProfileResponse.body}`);
+    }
 
     const ownerProfileBody = JSON.parse(ownerProfileResponse.body);
     _ownerProfileId = ownerProfileBody.id;
@@ -72,12 +85,16 @@ describe('Property CRUD API', () => {
       method: 'POST',
       url: '/api/v1/auth/register',
       payload: {
-        email: 'tenant@example.com',
+        email: tenantEmail,
         password: 'SecurePass123!',
-        phone: '+34698765432',
+        phone: `+3469876${timestamp.toString().slice(-4)}`,
         role: 'TENANT',
       },
     });
+
+    if (tenantResponse.statusCode !== 201) {
+      throw new Error(`Failed to register tenant: ${tenantResponse.body}`);
+    }
 
     const tenantBody = JSON.parse(tenantResponse.body);
     tenantToken = tenantBody.token;
@@ -197,38 +214,56 @@ describe('Property CRUD API', () => {
 
   describe('GET /api/v1/properties', () => {
     beforeEach(async () => {
-      // Create test properties
-      await prisma.property.create({
-        data: {
-          ownerId: _ownerProfileId,
+      if (!_ownerProfileId) {
+        throw new Error('_ownerProfileId is not defined');
+      }
+
+      // Create test properties via API
+      const property1Response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/properties',
+        headers: { authorization: `Bearer ${ownerToken}` },
+        payload: {
           address: {
             street: 'Calle Mayor',
             number: '10',
             city: 'Madrid',
             postalCode: '28013',
+            province: 'Madrid',
+            country: 'Spain',
           },
           propertyType: 'APARTMENT',
           totalArea: 85.5,
           roomCount: 3,
-          verificationStatus: 'PENDING',
         },
       });
 
-      await prisma.property.create({
-        data: {
-          ownerId: _ownerProfileId,
+      if (property1Response.statusCode !== 201) {
+        throw new Error(`Failed to create property 1: ${property1Response.body}`);
+      }
+
+      const property2Response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/properties',
+        headers: { authorization: `Bearer ${ownerToken}` },
+        payload: {
           address: {
             street: 'Calle Minor',
             number: '5',
             city: 'Barcelona',
             postalCode: '08001',
+            province: 'Barcelona',
+            country: 'Spain',
           },
           propertyType: 'HOUSE',
           totalArea: 150.0,
           roomCount: 5,
-          verificationStatus: 'VERIFIED',
         },
       });
+
+      if (property2Response.statusCode !== 201) {
+        throw new Error(`Failed to create property 2: ${property2Response.body}`);
+      }
     });
 
     it('should return all properties for owner', async () => {
@@ -277,22 +312,32 @@ describe('Property CRUD API', () => {
 
   describe('GET /api/v1/properties/:id', () => {
     beforeEach(async () => {
-      const property = await prisma.property.create({
-        data: {
-          ownerId: _ownerProfileId,
+      // Create property via API
+      const propertyResponse = await app.inject({
+        method: 'POST',
+        url: '/api/v1/properties',
+        headers: { authorization: `Bearer ${ownerToken}` },
+        payload: {
           address: {
             street: 'Calle Mayor',
             number: '10',
             city: 'Madrid',
             postalCode: '28013',
+            province: 'Madrid',
+            country: 'Spain',
           },
           propertyType: 'APARTMENT',
           totalArea: 85.5,
           roomCount: 3,
-          verificationStatus: 'PENDING',
         },
       });
-      propertyId = property.id;
+
+      if (propertyResponse.statusCode !== 201) {
+        throw new Error(`Failed to create property: ${propertyResponse.body}`);
+      }
+
+      const propertyBody = JSON.parse(propertyResponse.body);
+      propertyId = propertyBody.id;
     });
 
     it('should return property details for owner', async () => {
@@ -351,22 +396,32 @@ describe('Property CRUD API', () => {
 
   describe('PATCH /api/v1/properties/:id', () => {
     beforeEach(async () => {
-      const property = await prisma.property.create({
-        data: {
-          ownerId: _ownerProfileId,
+      // Create property via API
+      const propertyResponse = await app.inject({
+        method: 'POST',
+        url: '/api/v1/properties',
+        headers: { authorization: `Bearer ${ownerToken}` },
+        payload: {
           address: {
             street: 'Calle Mayor',
             number: '10',
             city: 'Madrid',
             postalCode: '28013',
+            province: 'Madrid',
+            country: 'Spain',
           },
           propertyType: 'APARTMENT',
           totalArea: 85.5,
           roomCount: 3,
-          verificationStatus: 'PENDING',
         },
       });
-      propertyId = property.id;
+
+      if (propertyResponse.statusCode !== 201) {
+        throw new Error(`Failed to create property: ${propertyResponse.body}`);
+      }
+
+      const propertyBody = JSON.parse(propertyResponse.body);
+      propertyId = propertyBody.id;
     });
 
     it('should update property details', async () => {
@@ -439,22 +494,32 @@ describe('Property CRUD API', () => {
 
   describe('DELETE /api/v1/properties/:id', () => {
     beforeEach(async () => {
-      const property = await prisma.property.create({
-        data: {
-          ownerId: _ownerProfileId,
+      // Create property via API
+      const propertyResponse = await app.inject({
+        method: 'POST',
+        url: '/api/v1/properties',
+        headers: { authorization: `Bearer ${ownerToken}` },
+        payload: {
           address: {
             street: 'Calle Mayor',
             number: '10',
             city: 'Madrid',
             postalCode: '28013',
+            province: 'Madrid',
+            country: 'Spain',
           },
           propertyType: 'APARTMENT',
           totalArea: 85.5,
           roomCount: 3,
-          verificationStatus: 'PENDING',
         },
       });
-      propertyId = property.id;
+
+      if (propertyResponse.statusCode !== 201) {
+        throw new Error(`Failed to create property: ${propertyResponse.body}`);
+      }
+
+      const propertyBody = JSON.parse(propertyResponse.body);
+      propertyId = propertyBody.id;
     });
 
     it('should delete property', async () => {
@@ -515,22 +580,32 @@ describe('Property CRUD API', () => {
 
   describe('POST /api/v1/properties/:id/photos', () => {
     beforeEach(async () => {
-      const property = await prisma.property.create({
-        data: {
-          ownerId: _ownerProfileId,
+      // Create property via API
+      const propertyResponse = await app.inject({
+        method: 'POST',
+        url: '/api/v1/properties',
+        headers: { authorization: `Bearer ${ownerToken}` },
+        payload: {
           address: {
             street: 'Calle Mayor',
             number: '10',
             city: 'Madrid',
             postalCode: '28013',
+            province: 'Madrid',
+            country: 'Spain',
           },
           propertyType: 'APARTMENT',
           totalArea: 85.5,
           roomCount: 3,
-          verificationStatus: 'PENDING',
         },
       });
-      propertyId = property.id;
+
+      if (propertyResponse.statusCode !== 201) {
+        throw new Error(`Failed to create property: ${propertyResponse.body}`);
+      }
+
+      const propertyBody = JSON.parse(propertyResponse.body);
+      propertyId = propertyBody.id;
     });
 
     it('should upload photo to property', async () => {
@@ -590,33 +665,53 @@ describe('Property CRUD API', () => {
 
   describe('DELETE /api/v1/properties/:id/photos/:photoId', () => {
     let photoId: string;
+    let propertyId: string;
 
     beforeEach(async () => {
-      const property = await prisma.property.create({
-        data: {
-          ownerId: _ownerProfileId,
+      // Create property via API
+      const propertyResponse = await app.inject({
+        method: 'POST',
+        url: '/api/v1/properties',
+        headers: { authorization: `Bearer ${ownerToken}` },
+        payload: {
           address: {
             street: 'Calle Mayor',
             number: '10',
             city: 'Madrid',
             postalCode: '28013',
+            province: 'Madrid',
+            country: 'Spain',
           },
           propertyType: 'APARTMENT',
           totalArea: 85.5,
           roomCount: 3,
-          verificationStatus: 'PENDING',
         },
       });
-      propertyId = property.id;
 
-      const photo = await prisma.propertyPhoto.create({
-        data: {
-          propertyId: propertyId,
+      if (propertyResponse.statusCode !== 201) {
+        throw new Error(`Failed to create property: ${propertyResponse.body}`);
+      }
+
+      const propertyBody = JSON.parse(propertyResponse.body);
+      propertyId = propertyBody.id;
+
+      // Create photo via API
+      const photoResponse = await app.inject({
+        method: 'POST',
+        url: `/api/v1/properties/${propertyId}/photos`,
+        headers: { authorization: `Bearer ${ownerToken}` },
+        payload: {
           url: 'https://example.com/photo1.jpg',
           sortOrder: 1,
         },
       });
-      photoId = photo.id;
+
+      if (photoResponse.statusCode !== 201) {
+        throw new Error(`Failed to create photo: ${photoResponse.body}`);
+      }
+
+      const photoBody = JSON.parse(photoResponse.body);
+      photoId = photoBody.id;
     });
 
     it('should delete property photo', async () => {

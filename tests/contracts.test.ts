@@ -51,21 +51,30 @@ describe('Contract API', () => {
     await prisma.userRole.deleteMany();
     await prisma.user.deleteMany();
 
+    // Use unique email with timestamp to avoid conflicts
+    const timestamp = Date.now();
+    const ownerEmail = `contract-owner-${timestamp}@test.com`;
+    const tenantEmail = `contract-tenant-${timestamp}@test.com`;
+
     // Create owner user via API
     const ownerRegisterResponse = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/register',
       payload: {
-        email: 'contract-owner@test.com',
+        email: ownerEmail,
         password: 'SecurePass123!',
-        phone: '+34611111111',
+        phone: `+3461111${timestamp.toString().slice(-4)}`,
         role: 'OWNER',
       },
     });
 
+    if (ownerRegisterResponse.statusCode !== 201) {
+      throw new Error(`Failed to register owner: ${ownerRegisterResponse.body}`);
+    }
+
     const ownerRegisterBody = JSON.parse(ownerRegisterResponse.body);
     ownerToken = ownerRegisterBody.token;
-    _ownerUserId = ownerRegisterBody.user.id;
+    _ownerUserId = ownerRegisterBody.user?.id;
 
     // Create owner profile via API
     const ownerProfileResponse = await app.inject({
@@ -123,31 +132,43 @@ describe('Contract API', () => {
       },
     });
 
+    if (listingResponse.statusCode !== 201) {
+      throw new Error(`Failed to create listing: ${listingResponse.body}`);
+    }
+
     const listingBody = JSON.parse(listingResponse.body);
     listingId = listingBody.id;
 
     // Publish listing
-    await app.inject({
+    const publishResponse = await app.inject({
       method: 'POST',
       url: `/api/v1/listings/${listingId}/publish`,
       headers: { authorization: `Bearer ${ownerToken}` },
     });
+
+    if (publishResponse.statusCode !== 200) {
+      throw new Error(`Failed to publish listing: ${publishResponse.body}`);
+    }
 
     // Create tenant user via API
     const tenantRegisterResponse = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/register',
       payload: {
-        email: 'contract-tenant@test.com',
+        email: tenantEmail,
         password: 'SecurePass123!',
-        phone: '+34622222222',
+        phone: `+3462222${timestamp.toString().slice(-4)}`,
         role: 'TENANT',
       },
     });
 
+    if (tenantRegisterResponse.statusCode !== 201) {
+      throw new Error(`Failed to register tenant: ${tenantRegisterResponse.body}`);
+    }
+
     const tenantRegisterBody = JSON.parse(tenantRegisterResponse.body);
     tenantToken = tenantRegisterBody.token;
-    _tenantUserId = tenantRegisterBody.user.id;
+    _tenantUserId = tenantRegisterBody.user?.id;
 
     // Create tenant profile via API
     const tenantProfileResponse = await app.inject({
@@ -181,11 +202,15 @@ describe('Contract API', () => {
       },
     });
 
+    if (applicationResponse.statusCode !== 201) {
+      throw new Error(`Failed to create application: ${applicationResponse.body}`);
+    }
+
     const applicationBody = JSON.parse(applicationResponse.body);
     applicationId = applicationBody.id;
 
     // Approve application
-    await app.inject({
+    const approveResponse = await app.inject({
       method: 'PATCH',
       url: `/api/v1/applications/${applicationId}/status`,
       headers: { authorization: `Bearer ${ownerToken}` },
@@ -193,6 +218,10 @@ describe('Contract API', () => {
         status: 'APPROVED',
       },
     });
+
+    if (approveResponse.statusCode !== 200) {
+      throw new Error(`Failed to approve application: ${approveResponse.body}`);
+    }
   });
 
   afterEach(async () => {
@@ -230,6 +259,10 @@ describe('Contract API', () => {
     });
 
     it('should reject contract creation for non-approved application', async () => {
+      if (!applicationId) {
+        throw new Error('applicationId is not defined');
+      }
+
       // Update application status to PENDING
       await prisma.application.update({
         where: { id: applicationId },
@@ -257,17 +290,22 @@ describe('Contract API', () => {
     });
 
     it('should reject contract creation if user is not owner of the listing', async () => {
-      // Create another owner via API
+      // Create another owner via API with unique email
+      const timestamp = Date.now();
       const otherOwnerRegisterResponse = await app.inject({
         method: 'POST',
         url: '/api/v1/auth/register',
         payload: {
-          email: 'other-owner@test.com',
+          email: `other-owner-${timestamp}@test.com`,
           password: 'SecurePass123!',
-          phone: '+34633333333',
+          phone: `+3463333${timestamp.toString().slice(-4)}`,
           role: 'OWNER',
         },
       });
+
+      if (otherOwnerRegisterResponse.statusCode !== 201) {
+        throw new Error(`Failed to register other owner: ${otherOwnerRegisterResponse.body}`);
+      }
 
       const otherOwnerRegisterBody = JSON.parse(otherOwnerRegisterResponse.body);
       const otherOwnerToken = otherOwnerRegisterBody.token;
@@ -397,29 +435,27 @@ describe('Contract API', () => {
   });
 
   describe('GET /api/v1/contracts', () => {
-    let _contractId: string;
-
     beforeEach(async () => {
-      // Create a contract for testing
-      const contract = await prisma.leaseContract.create({
-        data: {
+      // Create a contract for testing via API
+      const contractResponse = await app.inject({
+        method: 'POST',
+        url: '/api/v1/contracts',
+        headers: { Authorization: `Bearer ${ownerToken}` },
+        payload: {
           applicationId,
-          listingId,
-          propertyId,
-          ownerId: ownerProfileId,
-          tenantId: tenantProfileId,
-          contractNumber: `CTR-${Date.now()}`,
-          startDate: new Date('2026-02-01'),
-          endDate: new Date('2027-01-31'),
+          startDate: '2026-02-01',
+          endDate: '2027-01-31',
           monthlyRent: 1200,
           depositAmount: 2400,
           depositMonths: 2,
           paymentDueDay: 1,
           utilitiesResponsibility: 'TENANT',
-          status: 'DRAFT',
         },
       });
-      _contractId = contract.id;
+
+      if (contractResponse.statusCode !== 201) {
+        throw new Error(`Failed to create contract: ${contractResponse.body}`);
+      }
     });
 
     it('should list contracts for owner', async () => {
@@ -469,25 +505,29 @@ describe('Contract API', () => {
     let contractId: string;
 
     beforeEach(async () => {
-      const contract = await prisma.leaseContract.create({
-        data: {
+      // Create contract via API
+      const contractResponse = await app.inject({
+        method: 'POST',
+        url: '/api/v1/contracts',
+        headers: { Authorization: `Bearer ${ownerToken}` },
+        payload: {
           applicationId,
-          listingId,
-          propertyId,
-          ownerId: ownerProfileId,
-          tenantId: tenantProfileId,
-          contractNumber: `CTR-${Date.now()}`,
-          startDate: new Date('2026-02-01'),
-          endDate: new Date('2027-01-31'),
+          startDate: '2026-02-01',
+          endDate: '2027-01-31',
           monthlyRent: 1200,
           depositAmount: 2400,
           depositMonths: 2,
           paymentDueDay: 1,
           utilitiesResponsibility: 'TENANT',
-          status: 'DRAFT',
         },
       });
-      contractId = contract.id;
+
+      if (contractResponse.statusCode !== 201) {
+        throw new Error(`Failed to create contract: ${contractResponse.body}`);
+      }
+
+      const contractBody = JSON.parse(contractResponse.body);
+      contractId = contractBody.id;
     });
 
     it('should get contract details as owner', async () => {
@@ -529,17 +569,22 @@ describe('Contract API', () => {
     });
 
     it('should reject access for unauthorized user', async () => {
-      // Create another user via API
+      // Create another user via API with unique email
+      const timestamp = Date.now();
       const otherRegisterResponse = await app.inject({
         method: 'POST',
         url: '/api/v1/auth/register',
         payload: {
-          email: 'other-user@test.com',
+          email: `other-user-${timestamp}@test.com`,
           password: 'SecurePass123!',
-          phone: '+34644444444',
+          phone: `+3464444${timestamp.toString().slice(-4)}`,
           role: 'TENANT',
         },
       });
+
+      if (otherRegisterResponse.statusCode !== 201) {
+        throw new Error(`Failed to register other user: ${otherRegisterResponse.body}`);
+      }
 
       const otherRegisterBody = JSON.parse(otherRegisterResponse.body);
       const otherToken = otherRegisterBody.token;
@@ -570,25 +615,36 @@ describe('Contract API', () => {
     let contractId: string;
 
     beforeEach(async () => {
-      const contract = await prisma.leaseContract.create({
-        data: {
+      // Create contract via API and send for signing
+      const contractResponse = await app.inject({
+        method: 'POST',
+        url: '/api/v1/contracts',
+        headers: { Authorization: `Bearer ${ownerToken}` },
+        payload: {
           applicationId,
-          listingId,
-          propertyId,
-          ownerId: ownerProfileId,
-          tenantId: tenantProfileId,
-          contractNumber: `CTR-${Date.now()}`,
-          startDate: new Date('2026-02-01'),
-          endDate: new Date('2027-01-31'),
+          startDate: '2026-02-01',
+          endDate: '2027-01-31',
           monthlyRent: 1200,
           depositAmount: 2400,
           depositMonths: 2,
           paymentDueDay: 1,
           utilitiesResponsibility: 'TENANT',
-          status: 'PENDING_SIGNATURES',
         },
       });
-      contractId = contract.id;
+
+      if (contractResponse.statusCode !== 201) {
+        throw new Error(`Failed to create contract: ${contractResponse.body}`);
+      }
+
+      const contractBody = JSON.parse(contractResponse.body);
+      contractId = contractBody.id;
+
+      // Send for signing to get PENDING_SIGNATURES status
+      await app.inject({
+        method: 'POST',
+        url: `/api/v1/contracts/${contractId}/send-for-signing`,
+        headers: { Authorization: `Bearer ${ownerToken}` },
+      });
     });
 
     it('should allow owner to sign contract', async () => {
@@ -677,25 +733,29 @@ describe('Contract API', () => {
     let contractId: string;
 
     beforeEach(async () => {
-      const contract = await prisma.leaseContract.create({
-        data: {
+      // Create contract via API
+      const contractResponse = await app.inject({
+        method: 'POST',
+        url: '/api/v1/contracts',
+        headers: { Authorization: `Bearer ${ownerToken}` },
+        payload: {
           applicationId,
-          listingId,
-          propertyId,
-          ownerId: ownerProfileId,
-          tenantId: tenantProfileId,
-          contractNumber: `CTR-${Date.now()}`,
-          startDate: new Date('2026-02-01'),
-          endDate: new Date('2027-01-31'),
+          startDate: '2026-02-01',
+          endDate: '2027-01-31',
           monthlyRent: 1200,
           depositAmount: 2400,
           depositMonths: 2,
           paymentDueDay: 1,
           utilitiesResponsibility: 'TENANT',
-          status: 'DRAFT',
         },
       });
-      contractId = contract.id;
+
+      if (contractResponse.statusCode !== 201) {
+        throw new Error(`Failed to create contract: ${contractResponse.body}`);
+      }
+
+      const contractBody = JSON.parse(contractResponse.body);
+      contractId = contractBody.id;
     });
 
     it('should send contract for signing (change status to PENDING_SIGNATURES)', async () => {
@@ -740,27 +800,50 @@ describe('Contract API', () => {
     let contractId: string;
 
     beforeEach(async () => {
-      const contract = await prisma.leaseContract.create({
-        data: {
+      // Create contract via API, send for signing, and sign by both parties
+      const contractResponse = await app.inject({
+        method: 'POST',
+        url: '/api/v1/contracts',
+        headers: { Authorization: `Bearer ${ownerToken}` },
+        payload: {
           applicationId,
-          listingId,
-          propertyId,
-          ownerId: ownerProfileId,
-          tenantId: tenantProfileId,
-          contractNumber: `CTR-${Date.now()}`,
-          startDate: new Date('2026-02-01'),
-          endDate: new Date('2027-01-31'),
+          startDate: '2026-02-01',
+          endDate: '2027-01-31',
           monthlyRent: 1200,
           depositAmount: 2400,
           depositMonths: 2,
           paymentDueDay: 1,
           utilitiesResponsibility: 'TENANT',
-          status: 'ACTIVE',
-          ownerSignedAt: new Date(),
-          tenantSignedAt: new Date(),
         },
       });
-      contractId = contract.id;
+
+      if (contractResponse.statusCode !== 201) {
+        throw new Error(`Failed to create contract: ${contractResponse.body}`);
+      }
+
+      const contractBody = JSON.parse(contractResponse.body);
+      contractId = contractBody.id;
+
+      // Send for signing
+      await app.inject({
+        method: 'POST',
+        url: `/api/v1/contracts/${contractId}/send-for-signing`,
+        headers: { Authorization: `Bearer ${ownerToken}` },
+      });
+
+      // Sign by owner
+      await app.inject({
+        method: 'POST',
+        url: `/api/v1/contracts/${contractId}/sign`,
+        headers: { Authorization: `Bearer ${ownerToken}` },
+      });
+
+      // Sign by tenant to activate
+      await app.inject({
+        method: 'POST',
+        url: `/api/v1/contracts/${contractId}/sign`,
+        headers: { Authorization: `Bearer ${tenantToken}` },
+      });
     });
 
     it('should terminate active contract as owner', async () => {

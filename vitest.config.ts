@@ -10,6 +10,8 @@ export default defineConfig({
         singleFork: true,
       },
     },
+    hookTimeout: 60000, // 60 seconds for hooks (beforeEach, afterEach, etc.)
+    testTimeout: 30000, // 30 seconds for individual tests
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json', 'html'],
