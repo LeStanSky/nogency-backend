@@ -28,6 +28,16 @@ interface Config {
     secret: string;
     expiresIn: string;
   };
+  rateLimit: {
+    global: {
+      max: number;
+      timeWindow: string;
+    };
+    auth: {
+      max: number;
+      timeWindow: string;
+    };
+  };
 }
 
 export const config: Config = {
@@ -55,5 +65,15 @@ export const config: Config = {
   jwt: {
     secret: process.env.JWT_SECRET || 'your-secret-key-change-this',
     expiresIn: process.env.JWT_EXPIRES_IN || '7d',
+  },
+  rateLimit: {
+    global: {
+      max: parseInt(process.env.RATE_LIMIT_MAX || '100', 10),
+      timeWindow: process.env.RATE_LIMIT_TIME_WINDOW || '1 minute',
+    },
+    auth: {
+      max: parseInt(process.env.RATE_LIMIT_AUTH_MAX || '10', 10),
+      timeWindow: process.env.RATE_LIMIT_AUTH_TIME_WINDOW || '1 minute',
+    },
   },
 };

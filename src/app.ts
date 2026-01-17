@@ -1,6 +1,7 @@
 import Fastify, { FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
+import rateLimit from '@fastify/rate-limit';
 import { config } from './config.js';
 import authRoutes from './routes/auth.routes.js';
 import profileRoutes from './routes/profile.routes.js';
@@ -11,7 +12,12 @@ import applicationRoutes from './routes/application.routes.js';
 import contractRoutes from './routes/contract.routes.js';
 import paymentRoutes from './routes/payment.routes.js';
 
-export const createApp = async (): Promise<FastifyInstance> => {
+interface AppOptions {
+  enableRateLimit?: boolean;
+}
+
+export const createApp = async (options?: AppOptions): Promise<FastifyInstance> => {
+  const enableRateLimit = options?.enableRateLimit ?? config.env !== 'test';
   const app = Fastify({
     logger: {
       level: config.env === 'development' ? 'info' : 'error',
@@ -30,6 +36,25 @@ export const createApp = async (): Promise<FastifyInstance> => {
       fileSize: 10 * 1024 * 1024, // 10MB
     },
   });
+
+  // Register global rate limiting (disabled in test environment by default)
+  if (enableRateLimit) {
+    await app.register(rateLimit, {
+      max: config.rateLimit.global.max,
+      timeWindow: config.rateLimit.global.timeWindow,
+      addHeadersOnExceeding: {
+        'x-ratelimit-limit': true,
+        'x-ratelimit-remaining': true,
+        'x-ratelimit-reset': true,
+      },
+      addHeaders: {
+        'x-ratelimit-limit': true,
+        'x-ratelimit-remaining': true,
+        'x-ratelimit-reset': true,
+        'retry-after': true,
+      },
+    });
+  }
 
   // Root route
   app.get('/', async () => {

@@ -4,6 +4,9 @@ import dotenv from 'dotenv';
 // Load test environment variables
 dotenv.config({ path: '.env.test' });
 
+// Set test environment to disable rate limiting
+process.env.NODE_ENV = 'test';
+
 beforeAll(async () => {
   // Setup code before all tests
   console.log('🧪 Setting up test environment...');

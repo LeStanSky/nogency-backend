@@ -89,6 +89,7 @@ npm run format           # Format with Prettier
 - Multipart plugin for file uploads (10MB limit)
 - Routes registered with `/api/v1` prefix
 - Logging: info (dev) / error (prod)
+- Rate limiting: 100 req/min global, 10 req/min for auth (disabled in test)
 
 **Config:** `src/config.ts` - Centralized configuration from environment variables
 

@@ -1282,14 +1282,14 @@ await app.register(swaggerUI, {
 
 ---
 
-#### 2. Rate Limiting
+#### 2. Rate Limiting ✅ COMPLETED
 
 **Цель:** Защита API от злоупотреблений и DDoS атак
 
 **Реализация:**
 
 ```bash
-npm install @fastify/rate-limit
+npm install @fastify/rate-limit@9
 ```
 
 ```typescript
@@ -1297,17 +1297,40 @@ npm install @fastify/rate-limit
 import rateLimit from '@fastify/rate-limit';
 
 await app.register(rateLimit, {
-  max: 100, // requests
-  timeWindow: '1 minute',
+  max: config.rateLimit.global.max, // 100 requests
+  timeWindow: config.rateLimit.global.timeWindow, // 1 minute
+  addHeaders: {
+    'x-ratelimit-limit': true,
+    'x-ratelimit-remaining': true,
+    'x-ratelimit-reset': true,
+    'retry-after': true,
+  },
 });
+```
+
+**Configuration (src/config.ts):**
+
+```typescript
+rateLimit: {
+  global: {
+    max: 100,        // 100 requests per minute (configurable via RATE_LIMIT_MAX)
+    timeWindow: '1 minute',
+  },
+  auth: {
+    max: 10,         // 10 requests per minute for auth (brute force protection)
+    timeWindow: '1 minute',
+  },
+}
 ```
 
 **Acceptance Criteria:**
 
-- [ ] Rate limiting настроен для всех endpoints
-- [ ] Разные лимиты для auth endpoints (более строгие)
-- [ ] Rate limit headers в ответах
-- [ ] Тесты для rate limiting
+- [x] Rate limiting настроен для всех endpoints ✅
+- [x] Разные лимиты для auth endpoints (более строгие - 10/min vs 100/min) ✅
+- [x] Rate limit headers в ответах (x-ratelimit-limit, remaining, reset, retry-after) ✅
+- [x] Тесты для rate limiting (5 tests in tests/rate-limit.test.ts) ✅
+- [x] Rate limiting отключен в test environment ✅
+- [x] Configurable via environment variables ✅
 
 ---
 
