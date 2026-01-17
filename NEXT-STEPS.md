@@ -1406,7 +1406,7 @@ app.setErrorHandler((error, request, reply) => {
 
 ---
 
-#### 6. Health Checks для внешних сервисов
+#### 6. Health Checks для внешних сервисов ✅ COMPLETED
 
 **Цель:** Мониторинг доступности зависимостей
 
@@ -1416,20 +1416,32 @@ app.setErrorHandler((error, request, reply) => {
 // GET /health/detailed
 {
   "status": "ok",
-  "database": "connected",
-  "supabase": "connected",
-  "anthropic": "connected",
-  "stripe": "connected"
+  "timestamp": "2026-01-17T12:00:00.000Z",
+  "uptime": 3600,
+  "version": "1.0.0",
+  "environment": "development",
+  "services": {
+    "database": { "status": "ok", "latency": 5 },
+    "supabase": { "status": "ok", "latency": 120 },
+    "anthropic": { "status": "ok", "latency": 1 },
+    "stripe": { "status": "ok", "latency": 250 }
+  }
 }
+
+// GET /health/ready - Kubernetes readiness probe
+// GET /health/live - Kubernetes liveness probe
 ```
 
 **Acceptance Criteria:**
 
-- [ ] Health check для PostgreSQL
-- [ ] Health check для Supabase Storage
-- [ ] Health check для Anthropic API
-- [ ] Health check для Stripe API
-- [ ] Endpoint `/health/detailed` реализован
+- [x] Health check для PostgreSQL ✅
+- [x] Health check для Supabase Storage ✅
+- [x] Health check для Anthropic API ✅
+- [x] Health check для Stripe API ✅
+- [x] Endpoint `/health/detailed` реализован ✅
+- [x] Endpoint `/health/ready` реализован (readiness probe) ✅
+- [x] Endpoint `/health/live` реализован (liveness probe) ✅
+- [x] 13 тестов покрывают все сценарии ✅
 
 ---
 
@@ -1894,5 +1906,5 @@ git commit -m "feat: implement profile management API"
 
 ---
 
-**Last Updated:** 2026-01-16
-**Next Milestone:** Plaid Integration (Week 7-8) or API Documentation / Rate Limiting (recommendations)
+**Last Updated:** 2026-01-17
+**Next Milestone:** API Documentation (Swagger/OpenAPI) or Email Notifications (Resend)

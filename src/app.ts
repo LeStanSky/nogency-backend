@@ -11,6 +11,7 @@ import listingRoutes from './routes/listing.routes.js';
 import applicationRoutes from './routes/application.routes.js';
 import contractRoutes from './routes/contract.routes.js';
 import paymentRoutes from './routes/payment.routes.js';
+import healthRoutes from './routes/health.routes.js';
 
 interface AppOptions {
   enableRateLimit?: boolean;
@@ -84,6 +85,7 @@ export const createApp = async (options?: AppOptions): Promise<FastifyInstance> 
   await app.register(applicationRoutes, { prefix: '/api/v1/applications' });
   await app.register(contractRoutes, { prefix: '/api/v1/contracts' });
   await app.register(paymentRoutes, { prefix: '/api/v1/payments' });
+  await app.register(healthRoutes, { prefix: '/health' });
 
   return app;
 };
