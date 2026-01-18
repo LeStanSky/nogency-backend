@@ -8,7 +8,7 @@ NoGency AI is a backend API for a rental property management platform with AI-po
 
 **Tech Stack:** Node.js 20+, TypeScript 5+, Fastify 4.x, Prisma 5.x, PostgreSQL 15, Vitest
 
-**Current Status:** Production-ready with 175 tests, 86%+ coverage
+**Current Status:** Production-ready with 202 tests, 86%+ coverage
 
 ## Essential Commands
 
@@ -156,7 +156,7 @@ npm run db:migrate   # Create migration for production
 - Tests in `tests/` directory
 - File naming: `*.test.ts`
 - Setup file: `tests/setup.ts`
-- 175 tests across 10 files
+- 202 tests across 13 files
 - Coverage: 86%+
 
 **TDD Cycle:**
@@ -272,6 +272,55 @@ if (!parseResult.success) {
 ```
 
 ## Important Notes
+
+### Dual Validation System (Zod + JSON Schema)
+
+**CRITICAL:** This project uses TWO validation systems that MUST stay synchronized:
+
+1. **Zod schemas** (`src/schemas/*.ts`) - Runtime validation in controllers
+2. **JSON Schema** (in `src/routes/*.ts`) - Fastify validation + Swagger/OpenAPI docs
+
+**When adding/modifying API endpoints:**
+
+1. **Always run tests BEFORE and AFTER changes** - `npm test -- --run`
+2. **JSON Schema in routes must match Zod schema** - same required fields, same enums, same types
+3. **Response type matters:**
+   - Endpoints returning arrays: use `type: 'array'` with `items: { type: 'object', additionalProperties: true }`
+   - Endpoints returning objects: use `type: 'object'` with `additionalProperties: true`
+4. **Multipart endpoints** (file uploads): do NOT add `body` JSON Schema - validation is handled by controller
+5. **Fastify validates body BEFORE auth middleware** - so invalid body returns 400, not 401
+
+**Example of synchronized schemas:**
+
+```typescript
+// src/schemas/property.schema.ts (Zod)
+export const createPropertySchema = z.object({
+  address: addressSchema,  // nested object
+  propertyType: z.enum(['APARTMENT', 'HOUSE', 'STUDIO', 'ROOM']),
+  totalArea: z.number().positive(),
+  roomCount: z.number().int().positive(),
+});
+
+// src/routes/property.routes.ts (JSON Schema)
+body: {
+  type: 'object',
+  required: ['address', 'propertyType', 'totalArea', 'roomCount'],
+  properties: {
+    address: {
+      type: 'object',
+      required: ['street', 'city', 'postalCode'],
+      properties: { /* ... */ }
+    },
+    propertyType: { type: 'string', enum: ['APARTMENT', 'HOUSE', 'STUDIO', 'ROOM'] },
+    totalArea: { type: 'number', minimum: 0 },
+    roomCount: { type: 'integer', minimum: 1 },
+  }
+}
+```
+
+**If tests fail after schema changes:** Check that JSON Schema matches Zod schema exactly.
+
+---
 
 - **ES Modules:** Project uses ESM (`"type": "module"`). Always use `.js` extensions in imports.
 - **TypeScript:** `moduleResolution: "bundler"` - compatible with modern bundlers
