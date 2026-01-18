@@ -2,6 +2,8 @@ import Fastify, { FastifyInstance } from 'fastify';
 import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
 import rateLimit from '@fastify/rate-limit';
+import swagger from '@fastify/swagger';
+import swaggerUi from '@fastify/swagger-ui';
 import { config } from './config.js';
 import authRoutes from './routes/auth.routes.js';
 import profileRoutes from './routes/profile.routes.js';
@@ -38,6 +40,61 @@ export const createApp = async (options?: AppOptions): Promise<FastifyInstance> 
     },
   });
 
+  // Register Swagger for API documentation
+  await app.register(swagger, {
+    openapi: {
+      openapi: '3.0.0',
+      info: {
+        title: 'NoGency AI API',
+        description:
+          'Backend API for NoGency AI - Rental property management platform with AI-powered tenant screening',
+        version: '1.0.0',
+        contact: {
+          name: 'NoGency AI',
+          url: 'https://nogency.ai',
+        },
+      },
+      servers: [
+        {
+          url: `http://localhost:${config.port}`,
+          description: 'Development server',
+        },
+      ],
+      tags: [
+        { name: 'Auth', description: 'Authentication endpoints' },
+        { name: 'Profiles', description: 'User profile management' },
+        { name: 'Documents', description: 'Document upload and AI verification' },
+        { name: 'Properties', description: 'Property management' },
+        { name: 'Listings', description: 'Listing management' },
+        { name: 'Applications', description: 'Rental applications and AI scoring' },
+        { name: 'Contracts', description: 'Lease contract management' },
+        { name: 'Payments', description: 'Payment processing with Stripe' },
+        { name: 'Health', description: 'Health check endpoints' },
+      ],
+      components: {
+        securitySchemes: {
+          bearerAuth: {
+            type: 'http',
+            scheme: 'bearer',
+            bearerFormat: 'JWT',
+            description: 'JWT token obtained from /api/v1/auth/login',
+          },
+        },
+      },
+    },
+  });
+
+  // Register Swagger UI
+  await app.register(swaggerUi, {
+    routePrefix: '/docs',
+    uiConfig: {
+      docExpansion: 'list',
+      deepLinking: true,
+      persistAuthorization: true,
+    },
+    staticCSP: true,
+  });
+
   // Register global rate limiting (disabled in test environment by default)
   if (enableRateLimit) {
     await app.register(rateLimit, {
@@ -67,7 +124,7 @@ export const createApp = async (options?: AppOptions): Promise<FastifyInstance> 
         health: '/health',
         api: '/api/v1',
       },
-      docs: 'See README.md for API documentation',
+      docs: '/docs',
     };
   });
 
