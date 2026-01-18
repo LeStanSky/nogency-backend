@@ -1,6 +1,6 @@
 # Дальнейшие шаги разработки (TDD подход)
 
-## ✅ Текущий статус проекта (Updated: 2026-01-16)
+## ✅ Текущий статус проекта (Updated: 2026-01-18)
 
 ### Инфраструктура
 
@@ -1244,7 +1244,7 @@ export class PaymentService {
 
 **⚠️ Примечание:** Приоритетность выполнения этих задач следует уточнить после завершения всех задач недель 5-6 (Contracts & Payments).
 
-#### 1. API Documentation (OpenAPI/Swagger)
+#### 1. API Documentation (OpenAPI/Swagger) ✅ IN PROGRESS
 
 **Цель:** Автоматическая генерация API документации для фронтенда
 
@@ -1273,11 +1273,24 @@ await app.register(swaggerUI, {
 });
 ```
 
+**⚠️ ВАЖНО: Dual Validation System (Zod + JSON Schema)**
+
+При добавлении Swagger schemas в routes НЕОБХОДИМО синхронизировать их с Zod schemas:
+
+1. **JSON Schema в routes** должна соответствовать **Zod schema** в `src/schemas/`
+2. **Всегда запускать тесты** до и после изменений: `npm test -- --run`
+3. **Response type для списков** должен быть `type: 'array'` с `items`
+4. **Multipart endpoints** (file uploads) НЕ должны иметь body JSON Schema
+
+Подробнее см. раздел "Dual Validation System" в CLAUDE.md.
+
 **Acceptance Criteria:**
 
-- [ ] Swagger UI доступен на `/docs`
-- [ ] Все endpoints задокументированы
-- [ ] Request/Response схемы описаны
+- [x] Swagger UI доступен на `/docs` ✅
+- [x] Все endpoints задокументированы ✅
+- [x] Request/Response схемы описаны ✅
+- [x] JSON Schema синхронизированы с Zod schemas ✅
+- [x] Все 202 теста проходят ✅
 - [ ] Примеры запросов добавлены
 
 ---
@@ -1906,5 +1919,5 @@ git commit -m "feat: implement profile management API"
 
 ---
 
-**Last Updated:** 2026-01-17
-**Next Milestone:** API Documentation (Swagger/OpenAPI) or Email Notifications (Resend)
+**Last Updated:** 2026-01-18
+**Next Milestone:** Complete Swagger examples or Email Notifications (Resend)
