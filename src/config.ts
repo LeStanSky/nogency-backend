@@ -23,6 +23,8 @@ interface Config {
   };
   email: {
     resendApiKey: string;
+    fromAddress: string;
+    fromName: string;
   };
   jwt: {
     secret: string;
@@ -61,6 +63,8 @@ export const config: Config = {
   },
   email: {
     resendApiKey: process.env.RESEND_API_KEY || '',
+    fromAddress: process.env.EMAIL_FROM_ADDRESS || 'noreply@nogency.com',
+    fromName: process.env.EMAIL_FROM_NAME || 'NoGency AI',
   },
   jwt: {
     secret: process.env.JWT_SECRET || 'your-secret-key-change-this',

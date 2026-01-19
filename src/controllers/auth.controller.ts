@@ -1,6 +1,13 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { AuthService } from '../services/auth.service.js';
-import { registerSchema, loginSchema } from '../schemas/auth.schema.js';
+import {
+  registerSchema,
+  loginSchema,
+  verifyEmailSchema,
+  resendVerificationSchema,
+  requestPasswordResetSchema,
+  resetPasswordSchema,
+} from '../schemas/auth.schema.js';
 import { ZodError } from 'zod';
 
 export class AuthController {
@@ -100,6 +107,126 @@ export class AuthController {
         if (error.message === 'User not found') {
           return reply.code(404).send({
             error: 'User not found',
+          });
+        }
+      }
+
+      request.log.error(error);
+      return reply.code(500).send({
+        error: 'Internal server error',
+      });
+    }
+  }
+
+  /**
+   * Verify email with token
+   * POST /api/v1/auth/verify-email
+   */
+  static async verifyEmail(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const data = verifyEmailSchema.parse(request.body);
+      const result = await AuthService.verifyEmail(data.token);
+      return reply.code(200).send(result);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return reply.code(400).send({
+          error: 'Validation error',
+          details: error.errors,
+        });
+      }
+
+      if (error instanceof Error) {
+        if (error.message.includes('Invalid') || error.message.includes('expired')) {
+          return reply.code(400).send({
+            error: error.message,
+          });
+        }
+      }
+
+      request.log.error(error);
+      return reply.code(500).send({
+        error: 'Internal server error',
+      });
+    }
+  }
+
+  /**
+   * Resend verification email
+   * POST /api/v1/auth/resend-verification
+   */
+  static async resendVerification(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const data = resendVerificationSchema.parse(request.body);
+      const result = await AuthService.resendVerificationEmail(data.email);
+      return reply.code(200).send(result);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return reply.code(400).send({
+          error: 'Validation error',
+          details: error.errors,
+        });
+      }
+
+      if (error instanceof Error) {
+        if (error.message.includes('already verified')) {
+          return reply.code(400).send({
+            error: error.message,
+          });
+        }
+      }
+
+      request.log.error(error);
+      return reply.code(500).send({
+        error: 'Internal server error',
+      });
+    }
+  }
+
+  /**
+   * Request password reset
+   * POST /api/v1/auth/request-password-reset
+   */
+  static async requestPasswordReset(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const data = requestPasswordResetSchema.parse(request.body);
+      const result = await AuthService.requestPasswordReset(data.email);
+      return reply.code(200).send(result);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return reply.code(400).send({
+          error: 'Validation error',
+          details: error.errors,
+        });
+      }
+
+      request.log.error(error);
+      return reply.code(500).send({
+        error: 'Internal server error',
+      });
+    }
+  }
+
+  /**
+   * Reset password with token
+   * POST /api/v1/auth/reset-password
+   */
+  static async resetPassword(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const data = resetPasswordSchema.parse(request.body);
+      const result = await AuthService.resetPassword(data.token, data.password);
+      return reply.code(200).send(result);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        return reply.code(400).send({
+          error: 'Validation error',
+          details: error.errors,
+        });
+      }
+
+      if (error instanceof Error) {
+        if (error.message.includes('Invalid') || error.message.includes('expired')) {
+          return reply.code(400).send({
+            error: error.message,
           });
         }
       }
