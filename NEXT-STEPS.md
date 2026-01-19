@@ -25,11 +25,16 @@
 ### API Endpoints
 
 - [x] **Authentication API полностью реализован** ✅
-  - [x] POST /api/v1/auth/register (регистрация)
+  - [x] POST /api/v1/auth/register (регистрация + email verification)
   - [x] POST /api/v1/auth/login (вход с JWT)
   - [x] GET /api/v1/auth/me (текущий пользователь, protected)
+  - [x] POST /api/v1/auth/verify-email (верификация email)
+  - [x] POST /api/v1/auth/resend-verification (повторная отправка)
+  - [x] POST /api/v1/auth/request-password-reset (запрос сброса пароля)
+  - [x] POST /api/v1/auth/reset-password (сброс пароля)
   - [x] Auth middleware для защиты роутов
-  - [x] 10 тестов покрывают все сценарии
+  - [x] Email Service с Resend интеграцией
+  - [x] 28 тестов покрывают все сценарии (10 auth + 18 email)
   - [x] Coverage: >93% для auth модулов
 
 - [x] **Profile Management API полностью реализован** ✅
@@ -1399,23 +1404,26 @@ app.setErrorHandler((error, request, reply) => {
 
 ---
 
-#### 5. Email Notifications (Resend Integration)
+#### 5. Email Notifications (Resend Integration) ✅ COMPLETED
 
 **Цель:** Отправка уведомлений пользователям
 
-**Endpoints для реализации:**
+**Реализованные endpoints:**
 
-1. **POST /api/v1/notifications/email** - Отправить email
-2. **POST /api/v1/notifications/verify-email** - Верификация email
-3. **POST /api/v1/notifications/password-reset** - Сброс пароля
+1. **POST /api/v1/auth/verify-email** - Верификация email с токеном ✅
+2. **POST /api/v1/auth/resend-verification** - Повторная отправка верификации ✅
+3. **POST /api/v1/auth/request-password-reset** - Запрос сброса пароля ✅
+4. **POST /api/v1/auth/reset-password** - Сброс пароля с токеном ✅
 
 **Acceptance Criteria:**
 
-- [ ] Resend SDK интегрирован
-- [ ] Email templates созданы
-- [ ] Email верификация работает
-- [ ] Password reset через email
-- [ ] Тесты с mocked Resend API
+- [x] Resend SDK интегрирован ✅
+- [x] Email templates созданы (verification, password reset, welcome, notifications) ✅
+- [x] Email верификация работает ✅
+- [x] Password reset через email ✅
+- [x] Тесты с mocked Resend API (18 tests) ✅
+- [x] Регистрация автоматически отправляет verification email ✅
+- [x] Prisma schema обновлена (emailVerificationToken, passwordResetToken) ✅
 
 ---
 
@@ -1853,11 +1861,12 @@ git push
 
 **Текущий статус:**
 
-- Overall: 86.44% ✅ (>80% target achieved!)
-- Services: 86.33% ✅
-- Controllers: 77.72% ✅
+- Overall: 86%+ ✅ (>80% target achieved!)
+- Services: 86%+ ✅
+- Controllers: 77%+ ✅
 - Routes: 100% ✅
 - Schemas: 100% ✅
+- Tests: 220 total (202 core + 18 email)
 
 ---
 
@@ -1919,5 +1928,5 @@ git commit -m "feat: implement profile management API"
 
 ---
 
-**Last Updated:** 2026-01-18
-**Next Milestone:** Complete Swagger examples or Email Notifications (Resend)
+**Last Updated:** 2026-01-19
+**Next Milestone:** Plaid Integration (Income & Identity Verification) or CI/CD Pipeline
