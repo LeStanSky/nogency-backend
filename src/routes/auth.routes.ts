@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { AuthController } from '../controllers/auth.controller.js';
 import { authMiddleware } from '../middleware/auth.middleware.js';
 import { config } from '../config.js';
+import { errorResponseSchema } from '../schemas/error.schema.js';
 
 /**
  * Auth routes
@@ -83,25 +84,26 @@ export default async function authRoutes(app: FastifyInstance) {
         },
         400: {
           description: 'Validation error',
-          type: 'object',
-          properties: {
-            error: { type: 'string' },
-            details: { type: 'object' },
-          },
+          ...errorResponseSchema,
           examples: [
             {
               error: 'Validation failed',
-              details: { password: ['Password must be at least 8 characters'] },
+              statusCode: 400,
+              code: 'VALIDATION_ERROR',
+              details: { fields: ['password: Password must be at least 8 characters'] },
             },
           ],
         },
         409: {
           description: 'Email already registered',
-          type: 'object',
-          properties: {
-            error: { type: 'string' },
-          },
-          examples: [{ error: 'Email already registered' }],
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Email already exists',
+              statusCode: 409,
+              code: 'CONFLICT',
+            },
+          ],
         },
       },
     },
@@ -160,11 +162,14 @@ export default async function authRoutes(app: FastifyInstance) {
         },
         401: {
           description: 'Invalid credentials',
-          type: 'object',
-          properties: {
-            error: { type: 'string' },
-          },
-          examples: [{ error: 'Invalid email or password' }],
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Invalid credentials',
+              statusCode: 401,
+              code: 'UNAUTHORIZED',
+            },
+          ],
         },
       },
     },
@@ -218,11 +223,14 @@ export default async function authRoutes(app: FastifyInstance) {
         },
         401: {
           description: 'Unauthorized - Invalid or missing token',
-          type: 'object',
-          properties: {
-            error: { type: 'string' },
-          },
-          examples: [{ error: 'Invalid or expired token' }],
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Invalid or expired token',
+              statusCode: 401,
+              code: 'UNAUTHORIZED',
+            },
+          ],
         },
       },
     },
@@ -254,13 +262,13 @@ export default async function authRoutes(app: FastifyInstance) {
         },
         400: {
           description: 'Invalid or expired token',
-          type: 'object',
-          properties: {
-            error: { type: 'string' },
-          },
+          ...errorResponseSchema,
           examples: [
-            { error: 'Invalid or expired verification token' },
-            { error: 'Verification token has expired' },
+            {
+              error: 'Invalid or expired verification token',
+              statusCode: 400,
+              code: 'BAD_REQUEST',
+            },
           ],
         },
       },
@@ -293,11 +301,14 @@ export default async function authRoutes(app: FastifyInstance) {
         },
         400: {
           description: 'Email already verified',
-          type: 'object',
-          properties: {
-            error: { type: 'string' },
-          },
-          examples: [{ error: 'Email is already verified' }],
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Email is already verified',
+              statusCode: 400,
+              code: 'BAD_REQUEST',
+            },
+          ],
         },
       },
     },
@@ -362,13 +373,13 @@ export default async function authRoutes(app: FastifyInstance) {
         },
         400: {
           description: 'Invalid or expired token',
-          type: 'object',
-          properties: {
-            error: { type: 'string' },
-          },
+          ...errorResponseSchema,
           examples: [
-            { error: 'Invalid or expired reset token' },
-            { error: 'Reset token has expired' },
+            {
+              error: 'Invalid or expired reset token',
+              statusCode: 400,
+              code: 'BAD_REQUEST',
+            },
           ],
         },
       },

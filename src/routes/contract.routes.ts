@@ -2,6 +2,7 @@ import { FastifyInstance } from 'fastify';
 import { ContractController } from '../controllers/contract.controller.js';
 import { PaymentController } from '../controllers/payment.controller.js';
 import { authMiddleware } from '../middleware/auth.middleware.js';
+import { errorResponseSchema } from '../schemas/error.schema.js';
 
 export default async function contractRoutes(app: FastifyInstance) {
   // All routes require authentication
@@ -92,15 +93,25 @@ export default async function contractRoutes(app: FastifyInstance) {
         },
         400: {
           description: 'Validation error or application not approved',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-          examples: [{ error: 'Application must be approved to create contract' }],
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Application must be approved to create contract',
+              statusCode: 400,
+              code: 'BAD_REQUEST',
+            },
+          ],
         },
         403: {
           description: 'Only owner can create contracts',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-          examples: [{ error: 'Only listing owner can create contracts' }],
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Only listing owner can create contracts',
+              statusCode: 403,
+              code: 'FORBIDDEN',
+            },
+          ],
         },
       },
     },
@@ -199,9 +210,14 @@ export default async function contractRoutes(app: FastifyInstance) {
         },
         404: {
           description: 'Contract not found',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-          examples: [{ error: 'Contract not found' }],
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Contract not found',
+              statusCode: 404,
+              code: 'NOT_FOUND',
+            },
+          ],
         },
       },
     },
@@ -236,9 +252,14 @@ export default async function contractRoutes(app: FastifyInstance) {
         },
         400: {
           description: 'Contract cannot be sent (wrong status)',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-          examples: [{ error: 'Contract must be in DRAFT status to send for signing' }],
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Contract must be in DRAFT status to send for signing',
+              statusCode: 400,
+              code: 'BAD_REQUEST',
+            },
+          ],
         },
       },
     },
@@ -276,9 +297,14 @@ export default async function contractRoutes(app: FastifyInstance) {
         },
         400: {
           description: 'Contract cannot be signed (wrong status or already signed)',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-          examples: [{ error: 'You have already signed this contract' }],
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'You have already signed this contract',
+              statusCode: 400,
+              code: 'BAD_REQUEST',
+            },
+          ],
         },
       },
     },
@@ -333,9 +359,14 @@ export default async function contractRoutes(app: FastifyInstance) {
         },
         400: {
           description: 'Contract cannot be terminated',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-          examples: [{ error: 'Contract must be ACTIVE to terminate' }],
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Contract must be ACTIVE to terminate',
+              statusCode: 400,
+              code: 'BAD_REQUEST',
+            },
+          ],
         },
       },
     },

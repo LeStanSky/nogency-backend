@@ -346,7 +346,7 @@ You're receiving this because you have an active listing on NoGency AI.
       REVIEWING: {
         title: 'Application Under Review 👀',
         message:
-          "Great news! The property owner is now reviewing your application. We'll notify you once a decision has been made.",
+          'Great news! The property owner is now reviewing your application. We will notify you once a decision has been made.',
         color: '#F59E0B',
       },
     };

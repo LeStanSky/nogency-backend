@@ -9,6 +9,13 @@ import {
   resetPasswordSchema,
 } from '../schemas/auth.schema.js';
 import { ZodError } from 'zod';
+import {
+  ValidationError,
+  ConflictError,
+  UnauthorizedError,
+  NotFoundError,
+  BadRequestError,
+} from '../utils/errors.js';
 
 export class AuthController {
   /**
@@ -26,24 +33,18 @@ export class AuthController {
       return reply.code(201).send(result);
     } catch (error) {
       if (error instanceof ZodError) {
-        return reply.code(400).send({
-          error: 'Validation error',
-          details: error.errors,
+        throw new ValidationError('Validation error', {
+          fields: error.errors.map((e) => `${e.path.join('.')}: ${e.message}`),
         });
       }
 
       if (error instanceof Error) {
         if (error.message === 'Email already exists') {
-          return reply.code(409).send({
-            error: 'Email already exists',
-          });
+          throw new ConflictError('Email already exists');
         }
       }
 
-      request.log.error(error);
-      return reply.code(500).send({
-        error: 'Internal server error',
-      });
+      throw error;
     }
   }
 
@@ -62,24 +63,18 @@ export class AuthController {
       return reply.code(200).send(result);
     } catch (error) {
       if (error instanceof ZodError) {
-        return reply.code(400).send({
-          error: 'Validation error',
-          details: error.errors,
+        throw new ValidationError('Validation error', {
+          fields: error.errors.map((e) => `${e.path.join('.')}: ${e.message}`),
         });
       }
 
       if (error instanceof Error) {
         if (error.message === 'Invalid credentials') {
-          return reply.code(401).send({
-            error: 'Invalid credentials',
-          });
+          throw new UnauthorizedError('Invalid credentials');
         }
       }
 
-      request.log.error(error);
-      return reply.code(500).send({
-        error: 'Internal server error',
-      });
+      throw error;
     }
   }
 
@@ -93,9 +88,7 @@ export class AuthController {
       const userId = request.userId;
 
       if (!userId) {
-        return reply.code(401).send({
-          error: 'Unauthorized',
-        });
+        throw new UnauthorizedError();
       }
 
       // Get user data
@@ -105,16 +98,11 @@ export class AuthController {
     } catch (error) {
       if (error instanceof Error) {
         if (error.message === 'User not found') {
-          return reply.code(404).send({
-            error: 'User not found',
-          });
+          throw new NotFoundError('User not found');
         }
       }
 
-      request.log.error(error);
-      return reply.code(500).send({
-        error: 'Internal server error',
-      });
+      throw error;
     }
   }
 
@@ -129,24 +117,18 @@ export class AuthController {
       return reply.code(200).send(result);
     } catch (error) {
       if (error instanceof ZodError) {
-        return reply.code(400).send({
-          error: 'Validation error',
-          details: error.errors,
+        throw new ValidationError('Validation error', {
+          fields: error.errors.map((e) => `${e.path.join('.')}: ${e.message}`),
         });
       }
 
       if (error instanceof Error) {
         if (error.message.includes('Invalid') || error.message.includes('expired')) {
-          return reply.code(400).send({
-            error: error.message,
-          });
+          throw new BadRequestError(error.message);
         }
       }
 
-      request.log.error(error);
-      return reply.code(500).send({
-        error: 'Internal server error',
-      });
+      throw error;
     }
   }
 
@@ -161,24 +143,18 @@ export class AuthController {
       return reply.code(200).send(result);
     } catch (error) {
       if (error instanceof ZodError) {
-        return reply.code(400).send({
-          error: 'Validation error',
-          details: error.errors,
+        throw new ValidationError('Validation error', {
+          fields: error.errors.map((e) => `${e.path.join('.')}: ${e.message}`),
         });
       }
 
       if (error instanceof Error) {
         if (error.message.includes('already verified')) {
-          return reply.code(400).send({
-            error: error.message,
-          });
+          throw new BadRequestError(error.message);
         }
       }
 
-      request.log.error(error);
-      return reply.code(500).send({
-        error: 'Internal server error',
-      });
+      throw error;
     }
   }
 
@@ -193,16 +169,12 @@ export class AuthController {
       return reply.code(200).send(result);
     } catch (error) {
       if (error instanceof ZodError) {
-        return reply.code(400).send({
-          error: 'Validation error',
-          details: error.errors,
+        throw new ValidationError('Validation error', {
+          fields: error.errors.map((e) => `${e.path.join('.')}: ${e.message}`),
         });
       }
 
-      request.log.error(error);
-      return reply.code(500).send({
-        error: 'Internal server error',
-      });
+      throw error;
     }
   }
 
@@ -217,24 +189,18 @@ export class AuthController {
       return reply.code(200).send(result);
     } catch (error) {
       if (error instanceof ZodError) {
-        return reply.code(400).send({
-          error: 'Validation error',
-          details: error.errors,
+        throw new ValidationError('Validation error', {
+          fields: error.errors.map((e) => `${e.path.join('.')}: ${e.message}`),
         });
       }
 
       if (error instanceof Error) {
         if (error.message.includes('Invalid') || error.message.includes('expired')) {
-          return reply.code(400).send({
-            error: error.message,
-          });
+          throw new BadRequestError(error.message);
         }
       }
 
-      request.log.error(error);
-      return reply.code(500).send({
-        error: 'Internal server error',
-      });
+      throw error;
     }
   }
 }

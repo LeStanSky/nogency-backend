@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { DocumentsController } from '../controllers/documents.controller.js';
 import { authMiddleware } from '../middleware/auth.middleware.js';
+import { errorResponseSchema } from '../schemas/error.schema.js';
 
 export default async function documentsRoutes(app: FastifyInstance): Promise<void> {
   // All routes require authentication
@@ -38,12 +39,13 @@ export default async function documentsRoutes(app: FastifyInstance): Promise<voi
         },
         400: {
           description: 'Invalid file or missing required fields',
-          type: 'object',
-          properties: { error: { type: 'string' } },
+          ...errorResponseSchema,
           examples: [
-            { error: 'File is required' },
-            { error: 'Invalid document type' },
-            { error: 'File type not allowed. Allowed types: PDF, JPG, PNG' },
+            {
+              error: 'File is required',
+              statusCode: 400,
+              code: 'BAD_REQUEST',
+            },
           ],
         },
       },
@@ -129,9 +131,14 @@ export default async function documentsRoutes(app: FastifyInstance): Promise<voi
         },
         404: {
           description: 'Document not found',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-          examples: [{ error: 'Document not found' }],
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Document not found',
+              statusCode: 404,
+              code: 'NOT_FOUND',
+            },
+          ],
         },
       },
     },
@@ -187,18 +194,25 @@ export default async function documentsRoutes(app: FastifyInstance): Promise<voi
         },
         400: {
           description: 'Document cannot be verified',
-          type: 'object',
-          properties: { error: { type: 'string' } },
+          ...errorResponseSchema,
           examples: [
-            { error: 'Document already verified' },
-            { error: 'Document type not supported for AI verification' },
+            {
+              error: 'Document already verified',
+              statusCode: 400,
+              code: 'BAD_REQUEST',
+            },
           ],
         },
         404: {
           description: 'Document not found',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-          examples: [{ error: 'Document not found' }],
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Document not found',
+              statusCode: 404,
+              code: 'NOT_FOUND',
+            },
+          ],
         },
       },
     },
@@ -227,9 +241,14 @@ export default async function documentsRoutes(app: FastifyInstance): Promise<voi
         },
         404: {
           description: 'Document not found',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-          examples: [{ error: 'Document not found' }],
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Document not found',
+              statusCode: 404,
+              code: 'NOT_FOUND',
+            },
+          ],
         },
       },
     },

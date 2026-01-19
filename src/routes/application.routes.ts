@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { ApplicationController } from '../controllers/application.controller.js';
 import { authMiddleware } from '../middleware/auth.middleware.js';
+import { errorResponseSchema } from '../schemas/error.schema.js';
 
 /**
  * Application routes
@@ -73,21 +74,36 @@ export default async function applicationRoutes(app: FastifyInstance) {
         },
         403: {
           description: 'Only tenants can submit applications',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-          examples: [{ error: 'Only tenants can submit applications' }],
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Only tenants can submit applications',
+              statusCode: 403,
+              code: 'FORBIDDEN',
+            },
+          ],
         },
         404: {
           description: 'Listing not found',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-          examples: [{ error: 'Listing not found or not active' }],
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Listing not found or not active',
+              statusCode: 404,
+              code: 'NOT_FOUND',
+            },
+          ],
         },
         409: {
           description: 'Application already exists for this listing',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-          examples: [{ error: 'You have already applied for this listing' }],
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'You have already applied for this listing',
+              statusCode: 409,
+              code: 'CONFLICT',
+            },
+          ],
         },
       },
     },
@@ -206,9 +222,14 @@ export default async function applicationRoutes(app: FastifyInstance) {
         },
         404: {
           description: 'Application not found',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-          examples: [{ error: 'Application not found' }],
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Application not found',
+              statusCode: 404,
+              code: 'NOT_FOUND',
+            },
+          ],
         },
       },
     },
@@ -264,15 +285,25 @@ export default async function applicationRoutes(app: FastifyInstance) {
         },
         400: {
           description: 'Validation error (e.g., missing rejection reason)',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-          examples: [{ error: 'Rejection reason is required when rejecting' }],
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Rejection reason is required when rejecting',
+              statusCode: 400,
+              code: 'BAD_REQUEST',
+            },
+          ],
         },
         403: {
           description: 'Only owner can update status',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-          examples: [{ error: 'Only listing owner can update application status' }],
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Only listing owner can update application status',
+              statusCode: 403,
+              code: 'FORBIDDEN',
+            },
+          ],
         },
       },
     },
@@ -308,9 +339,14 @@ export default async function applicationRoutes(app: FastifyInstance) {
         },
         403: {
           description: 'Only tenant can withdraw their application',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-          examples: [{ error: 'Only the applicant can withdraw their application' }],
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Only the applicant can withdraw their application',
+              statusCode: 403,
+              code: 'FORBIDDEN',
+            },
+          ],
         },
       },
     },
@@ -357,9 +393,14 @@ export default async function applicationRoutes(app: FastifyInstance) {
         },
         403: {
           description: 'Only owner can calculate scoring',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-          examples: [{ error: 'Only listing owner can calculate scoring' }],
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Only listing owner can calculate scoring',
+              statusCode: 403,
+              code: 'FORBIDDEN',
+            },
+          ],
         },
       },
     },

@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { ListingController } from '../controllers/listing.controller.js';
 import { authMiddleware } from '../middleware/auth.middleware.js';
+import { errorResponseSchema } from '../schemas/error.schema.js';
 
 /**
  * Listing routes
@@ -149,15 +150,26 @@ export default async function listingRoutes(app: FastifyInstance) {
         },
         400: {
           description: 'Validation error',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-          examples: [{ error: 'Validation failed', details: { title: ['Min length is 5'] } }],
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Validation failed',
+              statusCode: 400,
+              code: 'VALIDATION_ERROR',
+              details: { fields: ['title: Min length is 5'] },
+            },
+          ],
         },
         404: {
           description: 'Property not found',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-          examples: [{ error: 'Property not found' }],
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Property not found',
+              statusCode: 404,
+              code: 'NOT_FOUND',
+            },
+          ],
         },
       },
     },
@@ -254,9 +266,14 @@ export default async function listingRoutes(app: FastifyInstance) {
         },
         404: {
           description: 'Listing not found',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-          examples: [{ error: 'Listing not found' }],
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Listing not found',
+              statusCode: 404,
+              code: 'NOT_FOUND',
+            },
+          ],
         },
       },
     },
@@ -318,9 +335,14 @@ export default async function listingRoutes(app: FastifyInstance) {
         },
         404: {
           description: 'Listing not found',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-          examples: [{ error: 'Listing not found' }],
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Listing not found',
+              statusCode: 404,
+              code: 'NOT_FOUND',
+            },
+          ],
         },
       },
     },
@@ -350,9 +372,14 @@ export default async function listingRoutes(app: FastifyInstance) {
         },
         404: {
           description: 'Listing not found',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-          examples: [{ error: 'Listing not found' }],
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Listing not found',
+              statusCode: 404,
+              code: 'NOT_FOUND',
+            },
+          ],
         },
       },
     },
@@ -388,9 +415,14 @@ export default async function listingRoutes(app: FastifyInstance) {
         },
         400: {
           description: 'Cannot publish listing',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-          examples: [{ error: 'Listing is already active' }],
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Listing is already active',
+              statusCode: 400,
+              code: 'BAD_REQUEST',
+            },
+          ],
         },
       },
     },
@@ -426,9 +458,14 @@ export default async function listingRoutes(app: FastifyInstance) {
         },
         400: {
           description: 'Cannot pause listing',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-          examples: [{ error: 'Listing must be active to pause' }],
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Listing must be active to pause',
+              statusCode: 400,
+              code: 'BAD_REQUEST',
+            },
+          ],
         },
       },
     },

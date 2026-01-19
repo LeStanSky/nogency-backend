@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { PropertyController } from '../controllers/property.controller.js';
 import { authMiddleware } from '../middleware/auth.middleware.js';
+import { errorResponseSchema } from '../schemas/error.schema.js';
 
 /**
  * Property routes
@@ -108,17 +109,26 @@ export default async function propertyRoutes(app: FastifyInstance) {
         },
         400: {
           description: 'Validation error',
-          type: 'object',
-          properties: { error: { type: 'string' } },
+          ...errorResponseSchema,
           examples: [
-            { error: 'Validation failed', details: { roomCount: ['Must be at least 1'] } },
+            {
+              error: 'Validation failed',
+              statusCode: 400,
+              code: 'VALIDATION_ERROR',
+              details: { fields: ['roomCount: Must be at least 1'] },
+            },
           ],
         },
         403: {
           description: 'User is not an owner',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-          examples: [{ error: 'Only owners can create properties' }],
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Only owners can create properties',
+              statusCode: 403,
+              code: 'FORBIDDEN',
+            },
+          ],
         },
       },
     },
@@ -214,9 +224,14 @@ export default async function propertyRoutes(app: FastifyInstance) {
         },
         404: {
           description: 'Property not found',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-          examples: [{ error: 'Property not found' }],
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Property not found',
+              statusCode: 404,
+              code: 'NOT_FOUND',
+            },
+          ],
         },
       },
     },
@@ -297,9 +312,14 @@ export default async function propertyRoutes(app: FastifyInstance) {
         },
         404: {
           description: 'Property not found',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-          examples: [{ error: 'Property not found' }],
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Property not found',
+              statusCode: 404,
+              code: 'NOT_FOUND',
+            },
+          ],
         },
       },
     },
@@ -329,9 +349,14 @@ export default async function propertyRoutes(app: FastifyInstance) {
         },
         404: {
           description: 'Property not found',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-          examples: [{ error: 'Property not found' }],
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Property not found',
+              statusCode: 404,
+              code: 'NOT_FOUND',
+            },
+          ],
         },
       },
     },
@@ -371,9 +396,14 @@ export default async function propertyRoutes(app: FastifyInstance) {
         },
         404: {
           description: 'Property not found',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-          examples: [{ error: 'Property not found' }],
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Property not found',
+              statusCode: 404,
+              code: 'NOT_FOUND',
+            },
+          ],
         },
       },
     },
@@ -404,9 +434,14 @@ export default async function propertyRoutes(app: FastifyInstance) {
         },
         404: {
           description: 'Photo not found',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-          examples: [{ error: 'Photo not found' }],
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Photo not found',
+              statusCode: 404,
+              code: 'NOT_FOUND',
+            },
+          ],
         },
       },
     },

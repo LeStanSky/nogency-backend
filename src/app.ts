@@ -1,10 +1,11 @@
-import Fastify, { FastifyInstance } from 'fastify';
+import Fastify, { FastifyInstance, FastifyError } from 'fastify';
 import cors from '@fastify/cors';
 import multipart from '@fastify/multipart';
 import rateLimit from '@fastify/rate-limit';
 import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import { config } from './config.js';
+import { AppError } from './utils/errors.js';
 import authRoutes from './routes/auth.routes.js';
 import profileRoutes from './routes/profile.routes.js';
 import documentsRoutes from './routes/documents.routes.js';
@@ -24,6 +25,21 @@ export const createApp = async (options?: AppOptions): Promise<FastifyInstance> 
   const app = Fastify({
     logger: {
       level: config.env === 'development' ? 'info' : 'error',
+    },
+    // Custom schema error formatter for standardized validation errors
+    schemaErrorFormatter: (errors, dataVar) => {
+      const formattedErrors = errors.map((err) => ({
+        field: err.instancePath || dataVar,
+        message: err.message || 'Validation error',
+        keyword: err.keyword,
+      }));
+      const error = new Error('Validation failed') as Error & {
+        statusCode: number;
+        validation: typeof formattedErrors;
+      };
+      error.statusCode = 400;
+      error.validation = formattedErrors;
+      return error;
     },
   });
 
@@ -131,6 +147,77 @@ export const createApp = async (options?: AppOptions): Promise<FastifyInstance> 
   // Health check route
   app.get('/health', async () => {
     return { status: 'ok', timestamp: new Date().toISOString() };
+  });
+
+  // Global error handler for standardized error responses
+  app.setErrorHandler((error: FastifyError | AppError | Error, request, reply) => {
+    // Log error for debugging
+    request.log.error(error);
+
+    // Build error response
+    let errorResponse: {
+      error: string;
+      statusCode: number;
+      code: string;
+      details?: unknown;
+      stack?: string;
+    };
+
+    // Handle AppError (our custom errors)
+    if (error instanceof AppError) {
+      errorResponse = {
+        error: error.message,
+        statusCode: error.statusCode,
+        code: error.code,
+        ...(error.details && { details: error.details }),
+        ...(config.env === 'development' && { stack: error.stack }),
+      };
+    } else if ('validation' in error && error.validation) {
+      // Handle Fastify validation errors (from JSON Schema)
+      errorResponse = {
+        error: 'Validation failed',
+        statusCode: 400,
+        code: 'VALIDATION_ERROR',
+        details: error.validation,
+      };
+    } else if ('statusCode' in error && typeof error.statusCode === 'number') {
+      // Handle Fastify errors (FST_ERR_*)
+      errorResponse = {
+        error: error.message || 'Request error',
+        statusCode: error.statusCode,
+        code: (error as FastifyError).code || 'FASTIFY_ERROR',
+        ...(config.env === 'development' && { stack: error.stack }),
+      };
+    } else {
+      // Handle unknown errors
+      errorResponse = {
+        error: config.env === 'production' ? 'Internal server error' : error.message,
+        statusCode: 500,
+        code: 'INTERNAL_SERVER_ERROR',
+        ...(config.env === 'development' && { stack: error.stack }),
+      };
+    }
+
+    // Send raw response without schema serialization
+    return reply
+      .code(errorResponse.statusCode)
+      .header('content-type', 'application/json; charset=utf-8')
+      .serializer((payload: unknown) => JSON.stringify(payload))
+      .send(errorResponse);
+  });
+
+  // Handle 404 for undefined routes
+  app.setNotFoundHandler((request, reply) => {
+    const errorResponse = {
+      error: `Route ${request.method}:${request.url} not found`,
+      statusCode: 404,
+      code: 'NOT_FOUND',
+    };
+    return reply
+      .code(404)
+      .header('content-type', 'application/json; charset=utf-8')
+      .serializer((payload: unknown) => JSON.stringify(payload))
+      .send(errorResponse);
   });
 
   // API routes

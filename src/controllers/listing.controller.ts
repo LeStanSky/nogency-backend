@@ -2,6 +2,13 @@ import { FastifyRequest, FastifyReply } from 'fastify';
 import { ListingService } from '../services/listing.service.js';
 import { createListingSchema, updateListingSchema } from '../schemas/listing.schema.js';
 import { ZodError } from 'zod';
+import {
+  ForbiddenError,
+  ValidationError,
+  NotFoundError,
+  BadRequestError,
+  UnauthorizedError,
+} from '../utils/errors.js';
 
 export class ListingController {
   /**
@@ -9,60 +16,48 @@ export class ListingController {
    * POST /api/v1/listings
    */
   static async createListing(request: FastifyRequest, reply: FastifyReply) {
+    const userId = request.userId;
+
+    if (!userId) {
+      throw new UnauthorizedError();
+    }
+
+    // Get owner profile ID
+    const ownerProfileId = await ListingService.getOwnerProfileId(userId);
+
+    if (!ownerProfileId) {
+      throw new ForbiddenError('Only property owners can create listings');
+    }
+
+    // Validate request body
+    let data;
     try {
-      const userId = request.userId;
-
-      if (!userId) {
-        return reply.code(401).send({
-          error: 'Unauthorized',
-        });
-      }
-
-      // Get owner profile ID
-      const ownerProfileId = await ListingService.getOwnerProfileId(userId);
-
-      if (!ownerProfileId) {
-        return reply.code(403).send({
-          error: 'Only property owners can create listings',
-        });
-      }
-
-      // Validate request body
-      const data = createListingSchema.parse(request.body);
-
-      // Check if property exists
-      const propertyExists = await ListingService.propertyExists(data.propertyId);
-      if (!propertyExists) {
-        return reply.code(404).send({
-          error: 'Property not found',
-        });
-      }
-
-      // Check if user owns the property
-      const isPropertyOwner = await ListingService.isPropertyOwner(data.propertyId, ownerProfileId);
-      if (!isPropertyOwner) {
-        return reply.code(403).send({
-          error: 'Access denied',
-        });
-      }
-
-      // Create listing
-      const listing = await ListingService.createListing(ownerProfileId, data);
-
-      return reply.code(201).send(listing);
+      data = createListingSchema.parse(request.body);
     } catch (error) {
       if (error instanceof ZodError) {
-        return reply.code(400).send({
-          error: 'Validation error',
-          details: error.errors,
+        throw new ValidationError('Validation error', {
+          fields: error.errors.map((e) => `${e.path.join('.')}: ${e.message}`),
         });
       }
-
-      request.log.error(error);
-      return reply.code(500).send({
-        error: 'Internal server error',
-      });
+      throw error;
     }
+
+    // Check if property exists
+    const propertyExists = await ListingService.propertyExists(data.propertyId);
+    if (!propertyExists) {
+      throw new NotFoundError('Property not found');
+    }
+
+    // Check if user owns the property
+    const isPropertyOwner = await ListingService.isPropertyOwner(data.propertyId, ownerProfileId);
+    if (!isPropertyOwner) {
+      throw new ForbiddenError('Access denied');
+    }
+
+    // Create listing
+    const listing = await ListingService.createListing(ownerProfileId, data);
+
+    return reply.code(201).send(listing);
   }
 
   /**
@@ -70,32 +65,23 @@ export class ListingController {
    * GET /api/v1/listings
    */
   static async getListings(request: FastifyRequest, reply: FastifyReply) {
-    try {
-      const userId = request.userId;
+    const userId = request.userId;
 
-      if (!userId) {
-        return reply.code(401).send({
-          error: 'Unauthorized',
-        });
-      }
-
-      // Get owner profile ID
-      const ownerProfileId = await ListingService.getOwnerProfileId(userId);
-
-      if (!ownerProfileId) {
-        return reply.code(200).send([]);
-      }
-
-      // Get listings
-      const listings = await ListingService.getListingsByOwner(ownerProfileId);
-
-      return reply.code(200).send(listings);
-    } catch (error) {
-      request.log.error(error);
-      return reply.code(500).send({
-        error: 'Internal server error',
-      });
+    if (!userId) {
+      throw new UnauthorizedError();
     }
+
+    // Get owner profile ID
+    const ownerProfileId = await ListingService.getOwnerProfileId(userId);
+
+    if (!ownerProfileId) {
+      return reply.code(200).send([]);
+    }
+
+    // Get listings
+    const listings = await ListingService.getListingsByOwner(ownerProfileId);
+
+    return reply.code(200).send(listings);
   }
 
   /**
@@ -103,15 +89,8 @@ export class ListingController {
    * GET /api/v1/listings/public
    */
   static async getPublicListings(_request: FastifyRequest, reply: FastifyReply) {
-    try {
-      const listings = await ListingService.getActiveListings();
-
-      return reply.code(200).send(listings);
-    } catch (error) {
-      return reply.code(500).send({
-        error: 'Internal server error',
-      });
-    }
+    const listings = await ListingService.getActiveListings();
+    return reply.code(200).send(listings);
   }
 
   /**
@@ -122,43 +101,30 @@ export class ListingController {
     request: FastifyRequest<{ Params: { id: string } }>,
     reply: FastifyReply
   ) {
-    try {
-      const userId = request.userId;
+    const userId = request.userId;
 
-      if (!userId) {
-        return reply.code(401).send({
-          error: 'Unauthorized',
-        });
-      }
-
-      const { id } = request.params;
-
-      // Get listing
-      const listing = await ListingService.getListingById(id);
-
-      if (!listing) {
-        return reply.code(404).send({
-          error: 'Listing not found',
-        });
-      }
-
-      // Get owner profile ID
-      const ownerProfileId = await ListingService.getOwnerProfileId(userId);
-
-      // Check ownership (owner can see all their listings, others can only see ACTIVE)
-      if (listing.ownerId !== ownerProfileId && listing.status !== 'ACTIVE') {
-        return reply.code(403).send({
-          error: 'Access denied',
-        });
-      }
-
-      return reply.code(200).send(listing);
-    } catch (error) {
-      request.log.error(error);
-      return reply.code(500).send({
-        error: 'Internal server error',
-      });
+    if (!userId) {
+      throw new UnauthorizedError();
     }
+
+    const { id } = request.params;
+
+    // Get listing
+    const listing = await ListingService.getListingById(id);
+
+    if (!listing) {
+      throw new NotFoundError('Listing not found');
+    }
+
+    // Get owner profile ID
+    const ownerProfileId = await ListingService.getOwnerProfileId(userId);
+
+    // Check ownership (owner can see all their listings, others can only see ACTIVE)
+    if (listing.ownerId !== ownerProfileId && listing.status !== 'ACTIVE') {
+      throw new ForbiddenError('Access denied');
+    }
+
+    return reply.code(200).send(listing);
   }
 
   /**
@@ -169,56 +135,46 @@ export class ListingController {
     request: FastifyRequest<{ Params: { id: string } }>,
     reply: FastifyReply
   ) {
+    const userId = request.userId;
+
+    if (!userId) {
+      throw new UnauthorizedError();
+    }
+
+    const { id } = request.params;
+
+    // Get listing
+    const existingListing = await ListingService.getListingById(id);
+
+    if (!existingListing) {
+      throw new NotFoundError('Listing not found');
+    }
+
+    // Get owner profile ID
+    const ownerProfileId = await ListingService.getOwnerProfileId(userId);
+
+    // Check ownership
+    if (existingListing.ownerId !== ownerProfileId) {
+      throw new ForbiddenError('Access denied');
+    }
+
+    // Validate request body
+    let data;
     try {
-      const userId = request.userId;
-
-      if (!userId) {
-        return reply.code(401).send({
-          error: 'Unauthorized',
-        });
-      }
-
-      const { id } = request.params;
-
-      // Get listing
-      const existingListing = await ListingService.getListingById(id);
-
-      if (!existingListing) {
-        return reply.code(404).send({
-          error: 'Listing not found',
-        });
-      }
-
-      // Get owner profile ID
-      const ownerProfileId = await ListingService.getOwnerProfileId(userId);
-
-      // Check ownership
-      if (existingListing.ownerId !== ownerProfileId) {
-        return reply.code(403).send({
-          error: 'Access denied',
-        });
-      }
-
-      // Validate request body
-      const data = updateListingSchema.parse(request.body);
-
-      // Update listing
-      const listing = await ListingService.updateListing(id, data);
-
-      return reply.code(200).send(listing);
+      data = updateListingSchema.parse(request.body);
     } catch (error) {
       if (error instanceof ZodError) {
-        return reply.code(400).send({
-          error: 'Validation error',
-          details: error.errors,
+        throw new ValidationError('Validation error', {
+          fields: error.errors.map((e) => `${e.path.join('.')}: ${e.message}`),
         });
       }
-
-      request.log.error(error);
-      return reply.code(500).send({
-        error: 'Internal server error',
-      });
+      throw error;
     }
+
+    // Update listing
+    const listing = await ListingService.updateListing(id, data);
+
+    return reply.code(200).send(listing);
   }
 
   /**
@@ -229,48 +185,35 @@ export class ListingController {
     request: FastifyRequest<{ Params: { id: string } }>,
     reply: FastifyReply
   ) {
-    try {
-      const userId = request.userId;
+    const userId = request.userId;
 
-      if (!userId) {
-        return reply.code(401).send({
-          error: 'Unauthorized',
-        });
-      }
-
-      const { id } = request.params;
-
-      // Get listing
-      const existingListing = await ListingService.getListingById(id);
-
-      if (!existingListing) {
-        return reply.code(404).send({
-          error: 'Listing not found',
-        });
-      }
-
-      // Get owner profile ID
-      const ownerProfileId = await ListingService.getOwnerProfileId(userId);
-
-      // Check ownership
-      if (existingListing.ownerId !== ownerProfileId) {
-        return reply.code(403).send({
-          error: 'Access denied',
-        });
-      }
-
-      // Delete listing
-      await ListingService.deleteListing(id);
-
-      return reply.code(200).send({
-        message: 'Listing deleted successfully',
-      });
-    } catch (error) {
-      request.log.error(error);
-      return reply.code(500).send({
-        error: 'Internal server error',
-      });
+    if (!userId) {
+      throw new UnauthorizedError();
     }
+
+    const { id } = request.params;
+
+    // Get listing
+    const existingListing = await ListingService.getListingById(id);
+
+    if (!existingListing) {
+      throw new NotFoundError('Listing not found');
+    }
+
+    // Get owner profile ID
+    const ownerProfileId = await ListingService.getOwnerProfileId(userId);
+
+    // Check ownership
+    if (existingListing.ownerId !== ownerProfileId) {
+      throw new ForbiddenError('Access denied');
+    }
+
+    // Delete listing
+    await ListingService.deleteListing(id);
+
+    return reply.code(200).send({
+      message: 'Listing deleted successfully',
+    });
   }
 
   /**
@@ -281,53 +224,38 @@ export class ListingController {
     request: FastifyRequest<{ Params: { id: string } }>,
     reply: FastifyReply
   ) {
-    try {
-      const userId = request.userId;
+    const userId = request.userId;
 
-      if (!userId) {
-        return reply.code(401).send({
-          error: 'Unauthorized',
-        });
-      }
-
-      const { id } = request.params;
-
-      // Get listing
-      const existingListing = await ListingService.getListingById(id);
-
-      if (!existingListing) {
-        return reply.code(404).send({
-          error: 'Listing not found',
-        });
-      }
-
-      // Get owner profile ID
-      const ownerProfileId = await ListingService.getOwnerProfileId(userId);
-
-      // Check ownership
-      if (existingListing.ownerId !== ownerProfileId) {
-        return reply.code(403).send({
-          error: 'Access denied',
-        });
-      }
-
-      // Check if already active
-      if (existingListing.status === 'ACTIVE') {
-        return reply.code(400).send({
-          error: 'Listing is already published',
-        });
-      }
-
-      // Publish listing
-      const listing = await ListingService.publishListing(id);
-
-      return reply.code(200).send(listing);
-    } catch (error) {
-      request.log.error(error);
-      return reply.code(500).send({
-        error: 'Internal server error',
-      });
+    if (!userId) {
+      throw new UnauthorizedError();
     }
+
+    const { id } = request.params;
+
+    // Get listing
+    const existingListing = await ListingService.getListingById(id);
+
+    if (!existingListing) {
+      throw new NotFoundError('Listing not found');
+    }
+
+    // Get owner profile ID
+    const ownerProfileId = await ListingService.getOwnerProfileId(userId);
+
+    // Check ownership
+    if (existingListing.ownerId !== ownerProfileId) {
+      throw new ForbiddenError('Access denied');
+    }
+
+    // Check if already active
+    if (existingListing.status === 'ACTIVE') {
+      throw new BadRequestError('Listing is already published');
+    }
+
+    // Publish listing
+    const listing = await ListingService.publishListing(id);
+
+    return reply.code(200).send(listing);
   }
 
   /**
@@ -338,52 +266,37 @@ export class ListingController {
     request: FastifyRequest<{ Params: { id: string } }>,
     reply: FastifyReply
   ) {
-    try {
-      const userId = request.userId;
+    const userId = request.userId;
 
-      if (!userId) {
-        return reply.code(401).send({
-          error: 'Unauthorized',
-        });
-      }
-
-      const { id } = request.params;
-
-      // Get listing
-      const existingListing = await ListingService.getListingById(id);
-
-      if (!existingListing) {
-        return reply.code(404).send({
-          error: 'Listing not found',
-        });
-      }
-
-      // Get owner profile ID
-      const ownerProfileId = await ListingService.getOwnerProfileId(userId);
-
-      // Check ownership
-      if (existingListing.ownerId !== ownerProfileId) {
-        return reply.code(403).send({
-          error: 'Access denied',
-        });
-      }
-
-      // Check if active
-      if (existingListing.status !== 'ACTIVE') {
-        return reply.code(400).send({
-          error: 'Listing is not active',
-        });
-      }
-
-      // Pause listing
-      const listing = await ListingService.pauseListing(id);
-
-      return reply.code(200).send(listing);
-    } catch (error) {
-      request.log.error(error);
-      return reply.code(500).send({
-        error: 'Internal server error',
-      });
+    if (!userId) {
+      throw new UnauthorizedError();
     }
+
+    const { id } = request.params;
+
+    // Get listing
+    const existingListing = await ListingService.getListingById(id);
+
+    if (!existingListing) {
+      throw new NotFoundError('Listing not found');
+    }
+
+    // Get owner profile ID
+    const ownerProfileId = await ListingService.getOwnerProfileId(userId);
+
+    // Check ownership
+    if (existingListing.ownerId !== ownerProfileId) {
+      throw new ForbiddenError('Access denied');
+    }
+
+    // Check if active
+    if (existingListing.status !== 'ACTIVE') {
+      throw new BadRequestError('Listing is not active');
+    }
+
+    // Pause listing
+    const listing = await ListingService.pauseListing(id);
+
+    return reply.code(200).send(listing);
   }
 }

@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { ProfileController } from '../controllers/profile.controller.js';
 import { authMiddleware } from '../middleware/auth.middleware.js';
+import { errorResponseSchema } from '../schemas/error.schema.js';
 
 /**
  * Profile routes
@@ -72,15 +73,26 @@ export default async function profileRoutes(app: FastifyInstance) {
         },
         400: {
           description: 'Validation error',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-          examples: [{ error: 'Validation failed', details: { documentNumber: ['Required'] } }],
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Validation failed',
+              statusCode: 400,
+              code: 'VALIDATION_ERROR',
+              details: { fields: ['documentNumber: Required'] },
+            },
+          ],
         },
         409: {
           description: 'Owner profile already exists',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-          examples: [{ error: 'Owner profile already exists' }],
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Owner profile already exists',
+              statusCode: 409,
+              code: 'CONFLICT',
+            },
+          ],
         },
       },
     },
@@ -190,15 +202,26 @@ export default async function profileRoutes(app: FastifyInstance) {
         },
         400: {
           description: 'Validation error',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-          examples: [{ error: 'Validation failed', details: { firstName: ['Required'] } }],
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Validation failed',
+              statusCode: 400,
+              code: 'VALIDATION_ERROR',
+              details: { fields: ['firstName: Required'] },
+            },
+          ],
         },
         409: {
           description: 'Tenant profile already exists',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-          examples: [{ error: 'Tenant profile already exists' }],
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Tenant profile already exists',
+              statusCode: 409,
+              code: 'CONFLICT',
+            },
+          ],
         },
       },
     },
@@ -246,9 +269,14 @@ export default async function profileRoutes(app: FastifyInstance) {
         },
         404: {
           description: 'No profile found',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-          examples: [{ error: 'No profile found. Create an owner or tenant profile first.' }],
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'No profile found. Create an owner or tenant profile first.',
+              statusCode: 404,
+              code: 'NOT_FOUND',
+            },
+          ],
         },
       },
     },
@@ -294,9 +322,14 @@ export default async function profileRoutes(app: FastifyInstance) {
         },
         404: {
           description: 'Profile not found',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-          examples: [{ error: 'Profile not found' }],
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Profile not found',
+              statusCode: 404,
+              code: 'NOT_FOUND',
+            },
+          ],
         },
       },
     },

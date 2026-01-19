@@ -149,7 +149,7 @@ describe('Document Upload API', () => {
 
       expect(response.statusCode).toBe(413);
       const body = JSON.parse(response.body);
-      expect(body).toHaveProperty('message');
+      expect(body).toHaveProperty('error');
     });
 
     it('should return 400 for missing required fields', async () => {

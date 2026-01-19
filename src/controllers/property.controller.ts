@@ -6,6 +6,12 @@ import {
   createPropertyPhotoSchema,
 } from '../schemas/property.schema.js';
 import { ZodError } from 'zod';
+import {
+  ForbiddenError,
+  ValidationError,
+  NotFoundError,
+  UnauthorizedError,
+} from '../utils/errors.js';
 
 export class PropertyController {
   /**
@@ -13,44 +19,36 @@ export class PropertyController {
    * POST /api/v1/properties
    */
   static async createProperty(request: FastifyRequest, reply: FastifyReply) {
+    const userId = request.userId;
+
+    if (!userId) {
+      throw new UnauthorizedError();
+    }
+
+    // Get owner profile ID
+    const ownerProfileId = await PropertyService.getOwnerProfileId(userId);
+
+    if (!ownerProfileId) {
+      throw new ForbiddenError('Only property owners can create properties');
+    }
+
+    // Validate request body
+    let data;
     try {
-      const userId = request.userId;
-
-      if (!userId) {
-        return reply.code(401).send({
-          error: 'Unauthorized',
-        });
-      }
-
-      // Get owner profile ID
-      const ownerProfileId = await PropertyService.getOwnerProfileId(userId);
-
-      if (!ownerProfileId) {
-        return reply.code(403).send({
-          error: 'Only property owners can create properties',
-        });
-      }
-
-      // Validate request body
-      const data = createPropertySchema.parse(request.body);
-
-      // Create property
-      const property = await PropertyService.createProperty(ownerProfileId, data);
-
-      return reply.code(201).send(property);
+      data = createPropertySchema.parse(request.body);
     } catch (error) {
       if (error instanceof ZodError) {
-        return reply.code(400).send({
-          error: 'Validation error',
-          details: error.errors,
+        throw new ValidationError('Validation error', {
+          fields: error.errors.map((e) => `${e.path.join('.')}: ${e.message}`),
         });
       }
-
-      request.log.error(error);
-      return reply.code(500).send({
-        error: 'Internal server error',
-      });
+      throw error;
     }
+
+    // Create property
+    const property = await PropertyService.createProperty(ownerProfileId, data);
+
+    return reply.code(201).send(property);
   }
 
   /**
@@ -58,33 +56,24 @@ export class PropertyController {
    * GET /api/v1/properties
    */
   static async getProperties(request: FastifyRequest, reply: FastifyReply) {
-    try {
-      const userId = request.userId;
+    const userId = request.userId;
 
-      if (!userId) {
-        return reply.code(401).send({
-          error: 'Unauthorized',
-        });
-      }
-
-      // Get owner profile ID
-      const ownerProfileId = await PropertyService.getOwnerProfileId(userId);
-
-      if (!ownerProfileId) {
-        // Return empty array for non-owners
-        return reply.code(200).send([]);
-      }
-
-      // Get properties
-      const properties = await PropertyService.getPropertiesByOwner(ownerProfileId);
-
-      return reply.code(200).send(properties);
-    } catch (error) {
-      request.log.error(error);
-      return reply.code(500).send({
-        error: 'Internal server error',
-      });
+    if (!userId) {
+      throw new UnauthorizedError();
     }
+
+    // Get owner profile ID
+    const ownerProfileId = await PropertyService.getOwnerProfileId(userId);
+
+    if (!ownerProfileId) {
+      // Return empty array for non-owners
+      return reply.code(200).send([]);
+    }
+
+    // Get properties
+    const properties = await PropertyService.getPropertiesByOwner(ownerProfileId);
+
+    return reply.code(200).send(properties);
   }
 
   /**
@@ -95,43 +84,30 @@ export class PropertyController {
     request: FastifyRequest<{ Params: { id: string } }>,
     reply: FastifyReply
   ) {
-    try {
-      const userId = request.userId;
+    const userId = request.userId;
 
-      if (!userId) {
-        return reply.code(401).send({
-          error: 'Unauthorized',
-        });
-      }
-
-      const { id } = request.params;
-
-      // Get property
-      const property = await PropertyService.getPropertyById(id);
-
-      if (!property) {
-        return reply.code(404).send({
-          error: 'Property not found',
-        });
-      }
-
-      // Get owner profile ID
-      const ownerProfileId = await PropertyService.getOwnerProfileId(userId);
-
-      // Check ownership
-      if (property.ownerId !== ownerProfileId) {
-        return reply.code(403).send({
-          error: 'Access denied',
-        });
-      }
-
-      return reply.code(200).send(property);
-    } catch (error) {
-      request.log.error(error);
-      return reply.code(500).send({
-        error: 'Internal server error',
-      });
+    if (!userId) {
+      throw new UnauthorizedError();
     }
+
+    const { id } = request.params;
+
+    // Get property
+    const property = await PropertyService.getPropertyById(id);
+
+    if (!property) {
+      throw new NotFoundError('Property not found');
+    }
+
+    // Get owner profile ID
+    const ownerProfileId = await PropertyService.getOwnerProfileId(userId);
+
+    // Check ownership
+    if (property.ownerId !== ownerProfileId) {
+      throw new ForbiddenError('Access denied');
+    }
+
+    return reply.code(200).send(property);
   }
 
   /**
@@ -142,56 +118,46 @@ export class PropertyController {
     request: FastifyRequest<{ Params: { id: string } }>,
     reply: FastifyReply
   ) {
+    const userId = request.userId;
+
+    if (!userId) {
+      throw new UnauthorizedError();
+    }
+
+    const { id } = request.params;
+
+    // Get property
+    const existingProperty = await PropertyService.getPropertyById(id);
+
+    if (!existingProperty) {
+      throw new NotFoundError('Property not found');
+    }
+
+    // Get owner profile ID
+    const ownerProfileId = await PropertyService.getOwnerProfileId(userId);
+
+    // Check ownership
+    if (existingProperty.ownerId !== ownerProfileId) {
+      throw new ForbiddenError('Access denied');
+    }
+
+    // Validate request body
+    let data;
     try {
-      const userId = request.userId;
-
-      if (!userId) {
-        return reply.code(401).send({
-          error: 'Unauthorized',
-        });
-      }
-
-      const { id } = request.params;
-
-      // Get property
-      const existingProperty = await PropertyService.getPropertyById(id);
-
-      if (!existingProperty) {
-        return reply.code(404).send({
-          error: 'Property not found',
-        });
-      }
-
-      // Get owner profile ID
-      const ownerProfileId = await PropertyService.getOwnerProfileId(userId);
-
-      // Check ownership
-      if (existingProperty.ownerId !== ownerProfileId) {
-        return reply.code(403).send({
-          error: 'Access denied',
-        });
-      }
-
-      // Validate request body
-      const data = updatePropertySchema.parse(request.body);
-
-      // Update property
-      const property = await PropertyService.updateProperty(id, data);
-
-      return reply.code(200).send(property);
+      data = updatePropertySchema.parse(request.body);
     } catch (error) {
       if (error instanceof ZodError) {
-        return reply.code(400).send({
-          error: 'Validation error',
-          details: error.errors,
+        throw new ValidationError('Validation error', {
+          fields: error.errors.map((e) => `${e.path.join('.')}: ${e.message}`),
         });
       }
-
-      request.log.error(error);
-      return reply.code(500).send({
-        error: 'Internal server error',
-      });
+      throw error;
     }
+
+    // Update property
+    const property = await PropertyService.updateProperty(id, data);
+
+    return reply.code(200).send(property);
   }
 
   /**
@@ -202,48 +168,35 @@ export class PropertyController {
     request: FastifyRequest<{ Params: { id: string } }>,
     reply: FastifyReply
   ) {
-    try {
-      const userId = request.userId;
+    const userId = request.userId;
 
-      if (!userId) {
-        return reply.code(401).send({
-          error: 'Unauthorized',
-        });
-      }
-
-      const { id } = request.params;
-
-      // Get property
-      const existingProperty = await PropertyService.getPropertyById(id);
-
-      if (!existingProperty) {
-        return reply.code(404).send({
-          error: 'Property not found',
-        });
-      }
-
-      // Get owner profile ID
-      const ownerProfileId = await PropertyService.getOwnerProfileId(userId);
-
-      // Check ownership
-      if (existingProperty.ownerId !== ownerProfileId) {
-        return reply.code(403).send({
-          error: 'Access denied',
-        });
-      }
-
-      // Delete property
-      await PropertyService.deleteProperty(id);
-
-      return reply.code(200).send({
-        message: 'Property deleted successfully',
-      });
-    } catch (error) {
-      request.log.error(error);
-      return reply.code(500).send({
-        error: 'Internal server error',
-      });
+    if (!userId) {
+      throw new UnauthorizedError();
     }
+
+    const { id } = request.params;
+
+    // Get property
+    const existingProperty = await PropertyService.getPropertyById(id);
+
+    if (!existingProperty) {
+      throw new NotFoundError('Property not found');
+    }
+
+    // Get owner profile ID
+    const ownerProfileId = await PropertyService.getOwnerProfileId(userId);
+
+    // Check ownership
+    if (existingProperty.ownerId !== ownerProfileId) {
+      throw new ForbiddenError('Access denied');
+    }
+
+    // Delete property
+    await PropertyService.deleteProperty(id);
+
+    return reply.code(200).send({
+      message: 'Property deleted successfully',
+    });
   }
 
   /**
@@ -251,56 +204,46 @@ export class PropertyController {
    * POST /api/v1/properties/:id/photos
    */
   static async addPhoto(request: FastifyRequest<{ Params: { id: string } }>, reply: FastifyReply) {
+    const userId = request.userId;
+
+    if (!userId) {
+      throw new UnauthorizedError();
+    }
+
+    const { id } = request.params;
+
+    // Get property
+    const existingProperty = await PropertyService.getPropertyById(id);
+
+    if (!existingProperty) {
+      throw new NotFoundError('Property not found');
+    }
+
+    // Get owner profile ID
+    const ownerProfileId = await PropertyService.getOwnerProfileId(userId);
+
+    // Check ownership
+    if (existingProperty.ownerId !== ownerProfileId) {
+      throw new ForbiddenError('Access denied');
+    }
+
+    // Validate request body
+    let data;
     try {
-      const userId = request.userId;
-
-      if (!userId) {
-        return reply.code(401).send({
-          error: 'Unauthorized',
-        });
-      }
-
-      const { id } = request.params;
-
-      // Get property
-      const existingProperty = await PropertyService.getPropertyById(id);
-
-      if (!existingProperty) {
-        return reply.code(404).send({
-          error: 'Property not found',
-        });
-      }
-
-      // Get owner profile ID
-      const ownerProfileId = await PropertyService.getOwnerProfileId(userId);
-
-      // Check ownership
-      if (existingProperty.ownerId !== ownerProfileId) {
-        return reply.code(403).send({
-          error: 'Access denied',
-        });
-      }
-
-      // Validate request body
-      const data = createPropertyPhotoSchema.parse(request.body);
-
-      // Add photo
-      const photo = await PropertyService.addPhoto(id, data);
-
-      return reply.code(201).send(photo);
+      data = createPropertyPhotoSchema.parse(request.body);
     } catch (error) {
       if (error instanceof ZodError) {
-        return reply.code(400).send({
-          error: 'Validation error',
-          details: error.errors,
+        throw new ValidationError('Validation error', {
+          fields: error.errors.map((e) => `${e.path.join('.')}: ${e.message}`),
         });
       }
-
-      request.log.error(error);
-      return reply.code(500).send({
-        error: 'Internal server error',
-      });
+      throw error;
     }
+
+    // Add photo
+    const photo = await PropertyService.addPhoto(id, data);
+
+    return reply.code(201).send(photo);
   }
 
   /**
@@ -311,54 +254,39 @@ export class PropertyController {
     request: FastifyRequest<{ Params: { id: string; photoId: string } }>,
     reply: FastifyReply
   ) {
-    try {
-      const userId = request.userId;
+    const userId = request.userId;
 
-      if (!userId) {
-        return reply.code(401).send({
-          error: 'Unauthorized',
-        });
-      }
-
-      const { id, photoId } = request.params;
-
-      // Get photo with property info
-      const photo = await PropertyService.getPhotoById(photoId);
-
-      if (!photo) {
-        return reply.code(404).send({
-          error: 'Photo not found',
-        });
-      }
-
-      // Verify photo belongs to the specified property
-      if (photo.propertyId !== id) {
-        return reply.code(404).send({
-          error: 'Photo not found',
-        });
-      }
-
-      // Get owner profile ID
-      const ownerProfileId = await PropertyService.getOwnerProfileId(userId);
-
-      // Check ownership
-      if (photo.property.ownerId !== ownerProfileId) {
-        return reply.code(403).send({
-          error: 'Access denied',
-        });
-      }
-
-      // Delete photo
-      await PropertyService.deletePhoto(photoId);
-
-      return reply.code(200).send({
-        message: 'Photo deleted successfully',
-      });
-    } catch (error) {
-      request.log.error(error);
-      return reply.code(500).send({
-        error: 'Internal server error',
-      });
+    if (!userId) {
+      throw new UnauthorizedError();
     }
+
+    const { id, photoId } = request.params;
+
+    // Get photo with property info
+    const photo = await PropertyService.getPhotoById(photoId);
+
+    if (!photo) {
+      throw new NotFoundError('Photo not found');
+    }
+
+    // Verify photo belongs to the specified property
+    if (photo.propertyId !== id) {
+      throw new NotFoundError('Photo not found');
+    }
+
+    // Get owner profile ID
+    const ownerProfileId = await PropertyService.getOwnerProfileId(userId);
+
+    // Check ownership
+    if (photo.property.ownerId !== ownerProfileId) {
+      throw new ForbiddenError('Access denied');
+    }
+
+    // Delete photo
+    await PropertyService.deletePhoto(photoId);
+
+    return reply.code(200).send({
+      message: 'Photo deleted successfully',
+    });
   }
 }

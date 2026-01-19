@@ -1,6 +1,7 @@
 import { FastifyInstance } from 'fastify';
 import { PaymentController } from '../controllers/payment.controller.js';
 import { authMiddleware } from '../middleware/auth.middleware.js';
+import { errorResponseSchema } from '../schemas/error.schema.js';
 
 export default async function paymentRoutes(app: FastifyInstance) {
   // Create payment intent (requires auth)
@@ -56,21 +57,36 @@ export default async function paymentRoutes(app: FastifyInstance) {
         },
         400: {
           description: 'Validation error',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-          examples: [{ error: 'Amount must be positive' }],
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Amount must be positive',
+              statusCode: 400,
+              code: 'BAD_REQUEST',
+            },
+          ],
         },
         403: {
           description: 'Only tenant can create payments',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-          examples: [{ error: 'Only tenants can make payments' }],
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Only tenants can make payments',
+              statusCode: 403,
+              code: 'FORBIDDEN',
+            },
+          ],
         },
         404: {
           description: 'Contract not found',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-          examples: [{ error: 'Contract not found' }],
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Contract not found',
+              statusCode: 404,
+              code: 'NOT_FOUND',
+            },
+          ],
         },
       },
     },
@@ -176,9 +192,14 @@ export default async function paymentRoutes(app: FastifyInstance) {
         },
         404: {
           description: 'Payment not found',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-          examples: [{ error: 'Payment not found' }],
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Payment not found',
+              statusCode: 404,
+              code: 'NOT_FOUND',
+            },
+          ],
         },
       },
     },
@@ -210,9 +231,14 @@ export default async function paymentRoutes(app: FastifyInstance) {
         },
         400: {
           description: 'Invalid webhook signature',
-          type: 'object',
-          properties: { error: { type: 'string' } },
-          examples: [{ error: 'Invalid signature' }],
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Invalid signature',
+              statusCode: 400,
+              code: 'BAD_REQUEST',
+            },
+          ],
         },
       },
     },

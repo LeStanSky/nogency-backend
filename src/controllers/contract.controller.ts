@@ -6,6 +6,14 @@ import {
   contractQuerySchema,
 } from '../schemas/contract.schema.js';
 import { prisma } from '../db/client.js';
+import {
+  ForbiddenError,
+  ValidationError,
+  NotFoundError,
+  BadRequestError,
+  ConflictError,
+  UnauthorizedError,
+} from '../utils/errors.js';
 
 export class ContractController {
   /**
@@ -13,47 +21,44 @@ export class ContractController {
    * POST /api/v1/contracts
    */
   static async createContract(request: FastifyRequest, reply: FastifyReply) {
-    try {
-      const userId = request.userId;
+    const userId = request.userId;
 
-      // Check if user is owner
-      const ownerProfile = await prisma.ownerProfile.findUnique({
-        where: { userId },
+    // Check if user is owner
+    const ownerProfile = await prisma.ownerProfile.findUnique({
+      where: { userId },
+    });
+
+    if (!ownerProfile) {
+      throw new ForbiddenError('Only property owners can create contracts');
+    }
+
+    // Validate input
+    const parseResult = createContractSchema.safeParse(request.body);
+    if (!parseResult.success) {
+      throw new ValidationError('Validation failed', {
+        fields: Object.entries(parseResult.error.flatten().fieldErrors).map(
+          ([key, msgs]) => `${key}: ${(msgs as string[]).join(', ')}`
+        ),
       });
+    }
 
-      if (!ownerProfile) {
-        return reply.code(403).send({
-          error: 'Only property owners can create contracts',
-        });
-      }
-
-      // Validate input
-      const parseResult = createContractSchema.safeParse(request.body);
-      if (!parseResult.success) {
-        return reply.code(400).send({
-          error: 'Validation failed',
-          details: parseResult.error.flatten().fieldErrors,
-        });
-      }
-
+    try {
       const contract = await ContractService.createContract(ownerProfile.id, parseResult.data);
-
       return reply.code(201).send(contract);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Unknown error';
 
       if (message.includes('approved')) {
-        return reply.code(400).send({ error: message });
+        throw new BadRequestError(message);
       }
       if (message.includes('Only the listing owner')) {
-        return reply.code(403).send({ error: message });
+        throw new ForbiddenError(message);
       }
       if (message.includes('already exists')) {
-        return reply.code(409).send({ error: message });
+        throw new ConflictError(message);
       }
 
-      console.error('Create contract error:', error);
-      return reply.code(500).send({ error: 'Failed to create contract' });
+      throw error;
     }
   }
 
@@ -62,28 +67,23 @@ export class ContractController {
    * GET /api/v1/contracts
    */
   static async getContracts(request: FastifyRequest, reply: FastifyReply) {
-    try {
-      const userId = request.userId;
-      if (!userId) {
-        return reply.code(401).send({ error: 'Unauthorized' });
-      }
-
-      // Validate query params
-      const parseResult = contractQuerySchema.safeParse(request.query);
-      if (!parseResult.success) {
-        return reply.code(400).send({
-          error: 'Validation failed',
-          details: parseResult.error.flatten().fieldErrors,
-        });
-      }
-
-      const result = await ContractService.getContracts(userId, parseResult.data);
-
-      return reply.send(result);
-    } catch (error: unknown) {
-      console.error('Get contracts error:', error);
-      return reply.code(500).send({ error: 'Failed to get contracts' });
+    const userId = request.userId;
+    if (!userId) {
+      throw new UnauthorizedError();
     }
+
+    // Validate query params
+    const parseResult = contractQuerySchema.safeParse(request.query);
+    if (!parseResult.success) {
+      throw new ValidationError('Validation failed', {
+        fields: Object.entries(parseResult.error.flatten().fieldErrors).map(
+          ([key, msgs]) => `${key}: ${(msgs as string[]).join(', ')}`
+        ),
+      });
+    }
+
+    const result = await ContractService.getContracts(userId, parseResult.data);
+    return reply.send(result);
   }
 
   /**
@@ -91,17 +91,17 @@ export class ContractController {
    * GET /api/v1/contracts/:id
    */
   static async getContractById(request: FastifyRequest, reply: FastifyReply) {
-    try {
-      const userId = request.userId;
-      if (!userId) {
-        return reply.code(401).send({ error: 'Unauthorized' });
-      }
-      const { id } = request.params as { id: string };
+    const userId = request.userId;
+    if (!userId) {
+      throw new UnauthorizedError();
+    }
+    const { id } = request.params as { id: string };
 
+    try {
       const contract = await ContractService.getContractById(id, userId);
 
       if (!contract) {
-        return reply.code(404).send({ error: 'Contract not found' });
+        throw new NotFoundError('Contract not found');
       }
 
       return reply.send(contract);
@@ -109,11 +109,10 @@ export class ContractController {
       const message = error instanceof Error ? error.message : 'Unknown error';
 
       if (message === 'Access denied') {
-        return reply.code(403).send({ error: message });
+        throw new ForbiddenError(message);
       }
 
-      console.error('Get contract error:', error);
-      return reply.code(500).send({ error: 'Failed to get contract' });
+      throw error;
     }
   }
 
@@ -122,39 +121,35 @@ export class ContractController {
    * POST /api/v1/contracts/:id/send-for-signing
    */
   static async sendForSigning(request: FastifyRequest, reply: FastifyReply) {
+    const userId = request.userId;
+    const { id } = request.params as { id: string };
+
+    // Check if user is owner
+    const ownerProfile = await prisma.ownerProfile.findUnique({
+      where: { userId },
+    });
+
+    if (!ownerProfile) {
+      throw new ForbiddenError('Only property owners can send contracts for signing');
+    }
+
     try {
-      const userId = request.userId;
-      const { id } = request.params as { id: string };
-
-      // Check if user is owner
-      const ownerProfile = await prisma.ownerProfile.findUnique({
-        where: { userId },
-      });
-
-      if (!ownerProfile) {
-        return reply.code(403).send({
-          error: 'Only property owners can send contracts for signing',
-        });
-      }
-
       const contract = await ContractService.sendForSigning(id, ownerProfile.id);
-
       return reply.send(contract);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Unknown error';
 
       if (message.includes('not found')) {
-        return reply.code(404).send({ error: message });
+        throw new NotFoundError(message);
       }
       if (message.includes('Only the owner')) {
-        return reply.code(403).send({ error: message });
+        throw new ForbiddenError(message);
       }
       if (message.includes('DRAFT')) {
-        return reply.code(400).send({ error: message });
+        throw new BadRequestError(message);
       }
 
-      console.error('Send for signing error:', error);
-      return reply.code(500).send({ error: 'Failed to send contract for signing' });
+      throw error;
     }
   }
 
@@ -163,31 +158,29 @@ export class ContractController {
    * POST /api/v1/contracts/:id/sign
    */
   static async signContract(request: FastifyRequest, reply: FastifyReply) {
+    const userId = request.userId;
+    if (!userId) {
+      throw new UnauthorizedError();
+    }
+    const { id } = request.params as { id: string };
+
     try {
-      const userId = request.userId;
-      if (!userId) {
-        return reply.code(401).send({ error: 'Unauthorized' });
-      }
-      const { id } = request.params as { id: string };
-
       const contract = await ContractService.signContract(id, userId);
-
       return reply.send(contract);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Unknown error';
 
       if (message.includes('not found')) {
-        return reply.code(404).send({ error: message });
+        throw new NotFoundError(message);
       }
       if (message.includes('not a party')) {
-        return reply.code(403).send({ error: message });
+        throw new ForbiddenError(message);
       }
       if (message.includes('PENDING_SIGNATURES') || message.includes('already signed')) {
-        return reply.code(400).send({ error: message });
+        throw new BadRequestError(message);
       }
 
-      console.error('Sign contract error:', error);
-      return reply.code(500).send({ error: 'Failed to sign contract' });
+      throw error;
     }
   }
 
@@ -196,52 +189,49 @@ export class ContractController {
    * POST /api/v1/contracts/:id/terminate
    */
   static async terminateContract(request: FastifyRequest, reply: FastifyReply) {
-    try {
-      const userId = request.userId;
-      const { id } = request.params as { id: string };
+    const userId = request.userId;
+    const { id } = request.params as { id: string };
 
-      // Check if user is owner
-      const ownerProfile = await prisma.ownerProfile.findUnique({
-        where: { userId },
+    // Check if user is owner
+    const ownerProfile = await prisma.ownerProfile.findUnique({
+      where: { userId },
+    });
+
+    if (!ownerProfile) {
+      throw new ForbiddenError('Only property owners can terminate contracts');
+    }
+
+    // Validate input
+    const parseResult = terminateContractSchema.safeParse(request.body);
+    if (!parseResult.success) {
+      throw new ValidationError('Validation failed', {
+        fields: Object.entries(parseResult.error.flatten().fieldErrors).map(
+          ([key, msgs]) => `${key}: ${(msgs as string[]).join(', ')}`
+        ),
       });
+    }
 
-      if (!ownerProfile) {
-        return reply.code(403).send({
-          error: 'Only property owners can terminate contracts',
-        });
-      }
-
-      // Validate input
-      const parseResult = terminateContractSchema.safeParse(request.body);
-      if (!parseResult.success) {
-        return reply.code(400).send({
-          error: 'Validation failed',
-          details: parseResult.error.flatten().fieldErrors,
-        });
-      }
-
+    try {
       const contract = await ContractService.terminateContract(
         id,
         ownerProfile.id,
         parseResult.data
       );
-
       return reply.send(contract);
     } catch (error: unknown) {
       const message = error instanceof Error ? error.message : 'Unknown error';
 
       if (message.includes('not found')) {
-        return reply.code(404).send({ error: message });
+        throw new NotFoundError(message);
       }
       if (message.includes('Only the owner')) {
-        return reply.code(403).send({ error: message });
+        throw new ForbiddenError(message);
       }
       if (message.includes('ACTIVE')) {
-        return reply.code(400).send({ error: message });
+        throw new BadRequestError(message);
       }
 
-      console.error('Terminate contract error:', error);
-      return reply.code(500).send({ error: 'Failed to terminate contract' });
+      throw error;
     }
   }
 }

@@ -1,19 +1,18 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { AuthService } from '../services/auth.service.js';
+import { UnauthorizedError } from '../utils/errors.js';
 
 /**
  * Auth middleware to protect routes
  * Verifies JWT token and adds userId to request
  */
-export async function authMiddleware(request: FastifyRequest, reply: FastifyReply) {
+export async function authMiddleware(request: FastifyRequest, _reply: FastifyReply) {
   try {
     // Get token from Authorization header
     const authHeader = request.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      return reply.code(401).send({
-        error: 'Unauthorized - No token provided',
-      });
+      throw new UnauthorizedError('No token provided');
     }
 
     // Extract token
@@ -23,17 +22,16 @@ export async function authMiddleware(request: FastifyRequest, reply: FastifyRepl
     const decoded = AuthService.verifyToken(token);
 
     if (!decoded) {
-      return reply.code(401).send({
-        error: 'Unauthorized - Invalid token',
-      });
+      throw new UnauthorizedError('Invalid token');
     }
 
     // Add userId to request
     request.userId = decoded.userId;
   } catch (error) {
+    if (error instanceof UnauthorizedError) {
+      throw error;
+    }
     request.log.error(error);
-    return reply.code(401).send({
-      error: 'Unauthorized',
-    });
+    throw new UnauthorizedError('Invalid or expired token');
   }
 }
