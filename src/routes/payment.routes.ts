@@ -24,27 +24,53 @@ export default async function paymentRoutes(app: FastifyInstance) {
           periodStart: { type: 'string', format: 'date', description: 'Payment period start' },
           periodEnd: { type: 'string', format: 'date', description: 'Payment period end' },
         },
+        examples: [
+          {
+            contractId: '550e8400-e29b-41d4-a716-446655440060',
+            amount: 3000,
+            type: 'DEPOSIT',
+          },
+          {
+            contractId: '550e8400-e29b-41d4-a716-446655440060',
+            amount: 1500,
+            type: 'RENT',
+            periodStart: '2026-03-01',
+            periodEnd: '2026-03-31',
+          },
+        ],
       },
       response: {
         201: {
           description: 'Payment intent created',
           type: 'object',
           additionalProperties: true,
+          examples: [
+            {
+              paymentId: '550e8400-e29b-41d4-a716-446655440070',
+              clientSecret: 'pi_xxx_secret_xxx',
+              amount: 3000,
+              currency: 'eur',
+              status: 'PENDING',
+            },
+          ],
         },
         400: {
           description: 'Validation error',
           type: 'object',
           properties: { error: { type: 'string' } },
+          examples: [{ error: 'Amount must be positive' }],
         },
         403: {
           description: 'Only tenant can create payments',
           type: 'object',
           properties: { error: { type: 'string' } },
+          examples: [{ error: 'Only tenants can make payments' }],
         },
         404: {
           description: 'Contract not found',
           type: 'object',
           properties: { error: { type: 'string' } },
+          examples: [{ error: 'Contract not found' }],
         },
       },
     },
@@ -79,6 +105,32 @@ export default async function paymentRoutes(app: FastifyInstance) {
           description: 'List of payments',
           type: 'object',
           additionalProperties: true,
+          examples: [
+            {
+              payments: [
+                {
+                  id: '550e8400-e29b-41d4-a716-446655440070',
+                  contractId: '550e8400-e29b-41d4-a716-446655440060',
+                  type: 'DEPOSIT',
+                  amount: 3000,
+                  status: 'COMPLETED',
+                  paidAt: '2026-02-25T10:00:00.000Z',
+                },
+                {
+                  id: '550e8400-e29b-41d4-a716-446655440071',
+                  contractId: '550e8400-e29b-41d4-a716-446655440060',
+                  type: 'RENT',
+                  amount: 1500,
+                  status: 'PENDING',
+                  periodStart: '2026-03-01',
+                  periodEnd: '2026-03-31',
+                },
+              ],
+              total: 2,
+              page: 1,
+              limit: 10,
+            },
+          ],
         },
       },
     },
@@ -104,11 +156,29 @@ export default async function paymentRoutes(app: FastifyInstance) {
           description: 'Payment details',
           type: 'object',
           additionalProperties: true,
+          examples: [
+            {
+              id: '550e8400-e29b-41d4-a716-446655440070',
+              contractId: '550e8400-e29b-41d4-a716-446655440060',
+              type: 'DEPOSIT',
+              amount: 3000,
+              currency: 'EUR',
+              status: 'COMPLETED',
+              stripePaymentIntentId: 'pi_xxx',
+              paidAt: '2026-02-25T10:00:00.000Z',
+              contract: {
+                id: '550e8400-e29b-41d4-a716-446655440060',
+                property: { address: { city: 'Madrid' } },
+              },
+              createdAt: '2026-02-24T12:00:00.000Z',
+            },
+          ],
         },
         404: {
           description: 'Payment not found',
           type: 'object',
           properties: { error: { type: 'string' } },
+          examples: [{ error: 'Payment not found' }],
         },
       },
     },
@@ -121,7 +191,9 @@ export default async function paymentRoutes(app: FastifyInstance) {
       rawBody: true,
     },
     schema: {
-      description: 'Stripe webhook endpoint for payment events',
+      description:
+        'Stripe webhook endpoint for payment events. ' +
+        'Stripe sends events like payment_intent.succeeded, payment_intent.payment_failed.',
       tags: ['Payments'],
       headers: {
         type: 'object',
@@ -134,11 +206,13 @@ export default async function paymentRoutes(app: FastifyInstance) {
           description: 'Webhook processed',
           type: 'object',
           additionalProperties: true,
+          examples: [{ received: true }],
         },
         400: {
           description: 'Invalid webhook signature',
           type: 'object',
           properties: { error: { type: 'string' } },
+          examples: [{ error: 'Invalid signature' }],
         },
       },
     },

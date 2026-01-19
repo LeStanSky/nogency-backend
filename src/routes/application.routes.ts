@@ -41,27 +41,53 @@ export default async function applicationRoutes(app: FastifyInstance) {
             default: 'APP',
           },
         },
+        examples: [
+          {
+            listingId: '550e8400-e29b-41d4-a716-446655440040',
+            message:
+              'Hello, I am very interested in this apartment. I am a professional working ' +
+              'in Madrid and looking for a long-term rental.',
+            proposedMoveInDate: '2026-03-01',
+            proposedLeaseTermMonths: 12,
+            source: 'APP',
+          },
+        ],
       },
       response: {
         201: {
           description: 'Application submitted',
           type: 'object',
           additionalProperties: true,
+          examples: [
+            {
+              id: '550e8400-e29b-41d4-a716-446655440050',
+              listingId: '550e8400-e29b-41d4-a716-446655440040',
+              tenantId: '550e8400-e29b-41d4-a716-446655440002',
+              status: 'PENDING',
+              message: 'Hello, I am very interested...',
+              proposedMoveInDate: '2026-03-01',
+              proposedLeaseTermMonths: 12,
+              createdAt: '2026-01-18T12:00:00.000Z',
+            },
+          ],
         },
         403: {
           description: 'Only tenants can submit applications',
           type: 'object',
           properties: { error: { type: 'string' } },
+          examples: [{ error: 'Only tenants can submit applications' }],
         },
         404: {
           description: 'Listing not found',
           type: 'object',
           properties: { error: { type: 'string' } },
+          examples: [{ error: 'Listing not found or not active' }],
         },
         409: {
           description: 'Application already exists for this listing',
           type: 'object',
           properties: { error: { type: 'string' } },
+          examples: [{ error: 'You have already applied for this listing' }],
         },
       },
     },
@@ -105,6 +131,29 @@ export default async function applicationRoutes(app: FastifyInstance) {
           description: 'List of applications',
           type: 'object',
           additionalProperties: true,
+          examples: [
+            {
+              applications: [
+                {
+                  id: '550e8400-e29b-41d4-a716-446655440050',
+                  status: 'PENDING',
+                  listing: { title: 'Spacious apartment', monthlyRent: 1500 },
+                  tenant: { firstName: 'Carlos', lastName: 'Martinez' },
+                  createdAt: '2026-01-18T12:00:00.000Z',
+                },
+                {
+                  id: '550e8400-e29b-41d4-a716-446655440051',
+                  status: 'REVIEWING',
+                  listing: { title: 'Spacious apartment', monthlyRent: 1500 },
+                  tenant: { firstName: 'Ana', lastName: 'Rodriguez' },
+                  createdAt: '2026-01-17T10:00:00.000Z',
+                },
+              ],
+              total: 2,
+              page: 1,
+              limit: 10,
+            },
+          ],
         },
       },
     },
@@ -130,11 +179,36 @@ export default async function applicationRoutes(app: FastifyInstance) {
           description: 'Application details',
           type: 'object',
           additionalProperties: true,
+          examples: [
+            {
+              id: '550e8400-e29b-41d4-a716-446655440050',
+              listingId: '550e8400-e29b-41d4-a716-446655440040',
+              tenantId: '550e8400-e29b-41d4-a716-446655440002',
+              status: 'REVIEWING',
+              message: 'Hello, I am very interested...',
+              proposedMoveInDate: '2026-03-01',
+              proposedLeaseTermMonths: 12,
+              listing: {
+                title: 'Spacious 3-bedroom apartment',
+                monthlyRent: 1500,
+                property: { address: { city: 'Madrid' } },
+              },
+              tenant: {
+                firstName: 'Carlos',
+                lastName: 'Martinez',
+                occupation: 'EMPLOYED',
+                monthlyIncome: 3500,
+              },
+              scoring: null,
+              createdAt: '2026-01-18T12:00:00.000Z',
+            },
+          ],
         },
         404: {
           description: 'Application not found',
           type: 'object',
           properties: { error: { type: 'string' } },
+          examples: [{ error: 'Application not found' }],
         },
       },
     },
@@ -169,22 +243,36 @@ export default async function applicationRoutes(app: FastifyInstance) {
             description: 'Required when status is REJECTED',
           },
         },
+        examples: [
+          { status: 'REVIEWING' },
+          { status: 'APPROVED' },
+          { status: 'REJECTED', rejectionReason: 'Income does not meet minimum requirements' },
+        ],
       },
       response: {
         200: {
           description: 'Status updated',
           type: 'object',
           additionalProperties: true,
+          examples: [
+            {
+              id: '550e8400-e29b-41d4-a716-446655440050',
+              status: 'APPROVED',
+              updatedAt: '2026-01-18T14:00:00.000Z',
+            },
+          ],
         },
         400: {
           description: 'Validation error (e.g., missing rejection reason)',
           type: 'object',
           properties: { error: { type: 'string' } },
+          examples: [{ error: 'Rejection reason is required when rejecting' }],
         },
         403: {
           description: 'Only owner can update status',
           type: 'object',
           properties: { error: { type: 'string' } },
+          examples: [{ error: 'Only listing owner can update application status' }],
         },
       },
     },
@@ -210,11 +298,19 @@ export default async function applicationRoutes(app: FastifyInstance) {
           description: 'Application withdrawn',
           type: 'object',
           additionalProperties: true,
+          examples: [
+            {
+              id: '550e8400-e29b-41d4-a716-446655440050',
+              status: 'WITHDRAWN',
+              withdrawnAt: '2026-01-18T14:00:00.000Z',
+            },
+          ],
         },
         403: {
           description: 'Only tenant can withdraw their application',
           type: 'object',
           properties: { error: { type: 'string' } },
+          examples: [{ error: 'Only the applicant can withdraw their application' }],
         },
       },
     },
@@ -240,11 +336,30 @@ export default async function applicationRoutes(app: FastifyInstance) {
           description: 'AI scoring result',
           type: 'object',
           additionalProperties: true,
+          examples: [
+            {
+              applicationId: '550e8400-e29b-41d4-a716-446655440050',
+              totalScore: 78,
+              incomeScore: 90,
+              employmentScore: 85,
+              rentalHistoryScore: 70,
+              verificationScore: 60,
+              criteriaMatchScore: 85,
+              riskLevel: 'LOW',
+              recommendations: [
+                'Tenant meets income requirements (3x rent).',
+                'Employment is verified and stable.',
+                'Consider requesting additional references.',
+              ],
+              calculatedAt: '2026-01-18T14:00:00.000Z',
+            },
+          ],
         },
         403: {
           description: 'Only owner can calculate scoring',
           type: 'object',
           properties: { error: { type: 'string' } },
+          examples: [{ error: 'Only listing owner can calculate scoring' }],
         },
       },
     },
