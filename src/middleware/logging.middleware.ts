@@ -84,14 +84,11 @@ export const registerLoggingHooks = (app: FastifyInstance) => {
   // Log request start
   app.addHook('preHandler', async (request: FastifyRequest, _reply: FastifyReply) => {
     // Add user context if authenticated
-    if (request.user) {
-      request.requestContext.userId = request.user.id;
-      request.requestContext.userRole = request.user.roles?.[0];
+    if (request.userId) {
+      request.requestContext.userId = request.userId;
 
       setUser({
-        id: request.user.id,
-        email: request.user.email,
-        role: request.user.roles?.[0],
+        id: request.userId,
       });
     }
 
