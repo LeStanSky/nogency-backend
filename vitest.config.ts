@@ -14,7 +14,7 @@ export default defineConfig({
     testTimeout: 30000, // 30 seconds for individual tests
     coverage: {
       provider: 'v8',
-      reporter: ['text', 'json', 'html'],
+      reporter: ['text', 'json', 'html', 'lcov'],
       exclude: [
         'node_modules/',
         'dist/',
@@ -27,6 +27,12 @@ export default defineConfig({
         'src/index.ts',
         'src/services/ai.service.ts',
       ],
+      thresholds: {
+        lines: 80,
+        functions: 80,
+        branches: 60,
+        statements: 80,
+      },
     },
     include: ['tests/**/*.test.ts'],
     setupFiles: ['./tests/setup.ts'],
