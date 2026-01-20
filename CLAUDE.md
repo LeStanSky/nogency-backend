@@ -8,7 +8,7 @@ NoGency AI is a backend API for a rental property management platform with AI-po
 
 **Tech Stack:** Node.js 20+, TypeScript 5+, Fastify 4.x, Prisma 5.x, PostgreSQL 15, Vitest
 
-**Current Status:** Production-ready with 202 tests, 86%+ coverage
+**Current Status:** Production-ready with 233 tests, 86%+ coverage
 
 ## Essential Commands
 
@@ -101,10 +101,10 @@ src/
 ├── controllers/     # Business logic layer
 ├── services/        # External services (AI, Storage, Stripe)
 ├── middleware/      # Auth middleware
-├── schemas/         # Zod validation schemas
+├── schemas/         # Zod validation schemas + Error schemas
 ├── db/              # Prisma client singleton
 ├── types/           # Shared TypeScript types
-└── utils/           # Helper functions
+└── utils/           # Error classes + Helper functions
 ```
 
 ### Implemented APIs
@@ -156,7 +156,7 @@ npm run db:migrate   # Create migration for production
 - Tests in `tests/` directory
 - File naming: `*.test.ts`
 - Setup file: `tests/setup.ts`
-- 202 tests across 13 files
+- 233 tests across 15 files
 - Coverage: 86%+
 
 **TDD Cycle:**
@@ -251,24 +251,126 @@ import { config } from './config.js';
 const apiKey = config.anthropic.apiKey;
 ```
 
-**Error Handling:**
+**Error Handling (Standardized):**
+
+Проект использует стандартизированные классы ошибок из `src/utils/errors.ts`:
 
 ```typescript
+import { NotFoundError, ValidationError, UnauthorizedError } from '../utils/errors.js';
+
+// Throw errors in controllers - они автоматически обрабатываются middleware
 if (!resource) {
-  return reply.code(404).send({ error: 'Not found' });
+  throw new NotFoundError('Resource not found');
+}
+
+// Validation errors with details
+if (!parseResult.success) {
+  throw new ValidationError('Validation failed', {
+    email: ['Invalid email format'],
+    password: ['Password must be at least 8 characters'],
+  });
+}
+
+// Unauthorized access
+if (!user) {
+  throw new UnauthorizedError('Authentication required');
 }
 ```
 
-**Zod Validation:**
+**Available Error Classes:**
+
+- `BadRequestError` (400) - Invalid request data
+- `ValidationError` (400) - Schema validation failed (with details)
+- `UnauthorizedError` (401) - Authentication required/failed
+- `ForbiddenError` (403) - Access denied
+- `NotFoundError` (404) - Resource not found
+- `ConflictError` (409) - Resource conflict (duplicate)
+- `UnprocessableEntityError` (422) - Semantic validation failed
+- `TooManyRequestsError` (429) - Rate limit exceeded
+- `InternalServerError` (500) - Unexpected server error
+- `ServiceUnavailableError` (503) - Service temporarily unavailable
+
+**Error Response Format:**
+Все ошибки автоматически преобразуются в единый формат:
+
+```json
+{
+  "error": "Error message",
+  "statusCode": 400,
+  "code": "VALIDATION_ERROR",
+  "details": {
+    /* optional field errors */
+  }
+}
+```
+
+**Error Schemas for Swagger:**
+Используйте `errorResponseSchema` из `src/schemas/error.schema.ts` в роутах для каждого статуса ошибки:
 
 ```typescript
+import { errorResponseSchema } from '../schemas/error.schema.js';
+
+app.get(
+  '/endpoint',
+  {
+    schema: {
+      response: {
+        200: {
+          /* success schema */
+        },
+        400: {
+          description: 'Validation error',
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Validation failed',
+              statusCode: 400,
+              code: 'VALIDATION_ERROR',
+              details: { fields: ['email: Invalid email format'] },
+            },
+          ],
+        },
+        401: {
+          description: 'Unauthorized',
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'No token provided',
+              statusCode: 401,
+              code: 'UNAUTHORIZED',
+            },
+          ],
+        },
+        404: {
+          description: 'Resource not found',
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Resource not found',
+              statusCode: 404,
+              code: 'NOT_FOUND',
+            },
+          ],
+        },
+      },
+    },
+  },
+  handler
+);
+```
+
+**Примечание:** `commonErrorResponses` определен в `error.schema.ts`, но в проекте используется паттерн с явным указанием каждого статуса ошибки с `errorResponseSchema` для большей гибкости и явности.
+
+**Zod Validation (with Error Classes):**
+
+```typescript
+import { ValidationError } from '../utils/errors.js';
+
 const parseResult = schema.safeParse(request.body);
 if (!parseResult.success) {
-  return reply.code(400).send({
-    error: 'Validation failed',
-    details: parseResult.error.flatten().fieldErrors,
-  });
+  throw new ValidationError('Validation failed', parseResult.error.flatten().fieldErrors);
 }
+// Если валидация прошла, используем parseResult.data
 ```
 
 ## Important Notes

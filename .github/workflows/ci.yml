@@ -29,6 +29,28 @@ jobs:
       - name: Run ESLint
         run: npm run lint
 
+  typecheck:
+    name: Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Generate Prisma Client
+        run: npm run db:generate
+
+      - name: TypeScript type check
+        run: npx tsc --noEmit --project tsconfig.build.json
+
   build:
     name: Build
     runs-on: ubuntu-latest
@@ -50,6 +72,26 @@ jobs:
 
       - name: Build TypeScript
         run: npm run build
+
+  security:
+    name: Security Audit
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run security audit
+        run: npm audit --audit-level=moderate
+        continue-on-error: true
 
   test:
     name: Test
@@ -90,10 +132,18 @@ jobs:
           path: coverage/
           retention-days: 7
 
+      - name: Comment PR with coverage
+        if: github.event_name == 'pull_request'
+        uses: romeovs/lcov-reporter-action@v0.3.1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          lcov-file: ./coverage/lcov.info
+          delete-old-comments: true
+
   # All checks must pass before merging
   ci-success:
     name: CI Success
-    needs: [lint, build, test]
+    needs: [lint, typecheck, build, test]
     runs-on: ubuntu-latest
     steps:
       - name: All checks passed

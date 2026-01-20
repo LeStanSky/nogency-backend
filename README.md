@@ -2,7 +2,7 @@
 
 Backend API для платформы управления арендой недвижимости с AI-скорингом арендаторов.
 
-**Статус:** Production-Ready | 175 тестов | 86%+ coverage
+**Статус:** Production-Ready | 233 теста | 86%+ coverage
 
 ## Технологический стек
 
@@ -22,11 +22,15 @@ Backend API для платформы управления арендой нед
 
 ### Authentication API
 
-| Method | Endpoint                | Description                  |
-| ------ | ----------------------- | ---------------------------- |
-| POST   | `/api/v1/auth/register` | User registration with JWT   |
-| POST   | `/api/v1/auth/login`    | User login with JWT          |
-| GET    | `/api/v1/auth/me`       | Get current user (protected) |
+| Method | Endpoint                              | Description                  |
+| ------ | ------------------------------------- | ---------------------------- |
+| POST   | `/api/v1/auth/register`               | User registration with JWT   |
+| POST   | `/api/v1/auth/login`                  | User login with JWT          |
+| GET    | `/api/v1/auth/me`                     | Get current user (protected) |
+| POST   | `/api/v1/auth/verify-email`           | Verify email with token      |
+| POST   | `/api/v1/auth/resend-verification`    | Resend verification email    |
+| POST   | `/api/v1/auth/request-password-reset` | Request password reset link  |
+| POST   | `/api/v1/auth/reset-password`         | Reset password with token    |
 
 ### Profile Management API
 
@@ -108,13 +112,14 @@ nogency-back/
 │   ├── controllers/      # Business logic
 │   ├── services/         # External services (AI, Storage, Stripe)
 │   ├── middleware/       # Auth middleware
-│   ├── schemas/          # Zod validation
+│   ├── schemas/          # Zod validation + Error schemas
+│   ├── utils/            # Error classes + utilities
 │   ├── db/               # Prisma client
 │   ├── types/            # TypeScript types
 │   ├── config.ts         # Configuration
 │   ├── app.ts            # Fastify app
 │   └── index.ts          # Entry point
-├── tests/                # Test files (175 tests)
+├── tests/                # Test files (233 tests)
 ├── prisma/               # Database schema
 └── package.json
 ```
@@ -222,7 +227,7 @@ npm run test:coverage  # With coverage
 
 ## Test Coverage
 
-- **175 tests** across 10 test files
+- **233 теста** across 15 test files
 - **86%+ overall coverage**
 - All APIs fully tested
 
@@ -233,6 +238,35 @@ npm run test:coverage  # With coverage
 - [HOOKS.md](./HOOKS.md) - Git hooks
 - [CLAUDE.md](./CLAUDE.md) - Claude Code instructions
 
+## Обработка ошибок
+
+Проект использует стандартизированную систему обработки ошибок:
+
+- **Custom Error Classes** (`src/utils/errors.ts`): Специализированные классы ошибок для разных HTTP статусов
+  - `BadRequestError` (400)
+  - `ValidationError` (400)
+  - `UnauthorizedError` (401)
+  - `ForbiddenError` (403)
+  - `NotFoundError` (404)
+  - `ConflictError` (409)
+  - `UnprocessableEntityError` (422)
+  - `TooManyRequestsError` (429)
+  - `InternalServerError` (500)
+  - `ServiceUnavailableError` (503)
+
+- **Error Schemas** (`src/schemas/error.schema.ts`): Стандартизированные схемы ошибок для Swagger/OpenAPI документации
+- **Consistent Error Responses**: Все ошибки возвращают единый формат:
+  ```json
+  {
+    "error": "Error message",
+    "statusCode": 400,
+    "code": "VALIDATION_ERROR",
+    "details": {
+      /* optional */
+    }
+  }
+  ```
+
 ## Безопасность
 
 - JWT authentication (7 days expiry)
@@ -242,6 +276,7 @@ npm run test:coverage  # With coverage
 - Input validation via Zod
 - SQL injection protection via Prisma
 - Stripe webhook signature verification
+- Standardized error handling (no sensitive data leakage)
 
 ## License
 
@@ -251,4 +286,12 @@ MIT
 
 **Last Updated:** 2026-01-16
 **Version:** 1.0.0
-**Tests:** 175 passing
+**Tests:** 233 passing
+
+## Changelog
+
+### 2026-01-16
+
+- ✅ Стандартизирована обработка ошибок (custom error classes)
+- ✅ Добавлены схемы ошибок для Swagger документации
+- ✅ Обновлены все контроллеры и роуты для использования стандартизированных ошибок

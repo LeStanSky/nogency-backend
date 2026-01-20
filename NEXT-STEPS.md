@@ -1,6 +1,6 @@
 # Дальнейшие шаги разработки (TDD подход)
 
-## ✅ Текущий статус проекта (Updated: 2026-01-18)
+## ✅ Текущий статус проекта (Updated: 2026-01-16)
 
 ### Инфраструктура
 
@@ -13,6 +13,7 @@
 - [x] Git hooks (Husky + lint-staged) ✅
 - [x] Структура проекта ✅
 - [x] Health check endpoint ✅
+- [x] Стандартизированная обработка ошибок ✅
 
 ### База данных
 
@@ -1249,7 +1250,7 @@ export class PaymentService {
 
 **⚠️ Примечание:** Приоритетность выполнения этих задач следует уточнить после завершения всех задач недель 5-6 (Contracts & Payments).
 
-#### 1. API Documentation (OpenAPI/Swagger) ✅ IN PROGRESS
+#### 1. API Documentation (OpenAPI/Swagger) ✅ COMPLETED
 
 **Цель:** Автоматическая генерация API документации для фронтенда
 
@@ -1296,7 +1297,7 @@ await app.register(swaggerUI, {
 - [x] Request/Response схемы описаны ✅
 - [x] JSON Schema синхронизированы с Zod schemas ✅
 - [x] Все 202 теста проходят ✅
-- [ ] Примеры запросов добавлены
+- [x] Примеры запросов добавлены
 
 ---
 
@@ -1352,7 +1353,7 @@ rateLimit: {
 
 ---
 
-#### 3. Улучшенный Error Handling
+#### 3. Улучшенный Error Handling ✅ COMPLETED
 
 **Цель:** Стандартизированные ошибки и лучший UX
 
@@ -1364,24 +1365,80 @@ export class AppError extends Error {
   constructor(
     public statusCode: number,
     public message: string,
-    public code?: string
+    public code?: string,
+    public details?: ErrorDetails
   ) {
     super(message);
   }
+
+  toJSON() {
+    return {
+      error: this.message,
+      statusCode: this.statusCode,
+      code: this.code,
+      ...(this.details && { details: this.details }),
+    };
+  }
 }
 
-// src/app.ts - Global error handler
-app.setErrorHandler((error, request, reply) => {
-  // Стандартизированный формат ошибок
-});
+// Специализированные классы ошибок:
+// - BadRequestError (400)
+// - ValidationError (400) - с details для полей
+// - UnauthorizedError (401)
+// - ForbiddenError (403)
+// - NotFoundError (404)
+// - ConflictError (409)
+// - UnprocessableEntityError (422)
+// - TooManyRequestsError (429)
+// - InternalServerError (500)
+// - ServiceUnavailableError (503)
 ```
+
+**Error Schemas для Swagger:**
+
+```typescript
+// src/schemas/error.schema.ts
+export const errorResponseSchema = {
+  type: 'object',
+  properties: {
+    error: { type: 'string', description: 'Error message' },
+    statusCode: { type: 'number', description: 'HTTP status code' },
+    code: { type: 'string', description: 'Error code for programmatic handling' },
+    details: {
+      type: 'object',
+      description: 'Additional error details (validation errors, etc.)',
+      additionalProperties: true,
+    },
+  },
+  required: ['error', 'statusCode'],
+};
+
+// Использование в роутах:
+response: {
+  400: {
+    description: 'Validation error',
+    ...errorResponseSchema,
+    examples: [{ error: 'Validation failed', statusCode: 400, code: 'VALIDATION_ERROR' }],
+  },
+  404: {
+    description: 'Resource not found',
+    ...errorResponseSchema,
+    examples: [{ error: 'Resource not found', statusCode: 404, code: 'NOT_FOUND' }],
+  },
+}
+```
+
+**Примечание:** В проекте используется паттерн с явным указанием каждого статуса ошибки с `errorResponseSchema` для большей гибкости и явности. `commonErrorResponses` также определен, но не используется в текущей реализации.
 
 **Acceptance Criteria:**
 
-- [ ] Custom error classes созданы
-- [ ] Global error handler настроен
-- [ ] Все ошибки в стандартном формате
-- [ ] Логирование ошибок улучшено
+- [x] Custom error classes созданы ✅
+- [x] Global error handler настроен в app.ts ✅
+- [x] Все ошибки в стандартном формате ✅
+- [x] Error schemas для Swagger документации ✅
+- [x] Все контроллеры используют стандартизированные ошибки ✅
+- [x] Все роуты включают error response schemas ✅
+- [x] Тесты для обработки ошибок добавлены ✅
 
 ---
 
@@ -1466,7 +1523,7 @@ app.setErrorHandler((error, request, reply) => {
 
 ---
 
-#### 7. CI/CD Pipeline (GitHub Actions)
+#### 7. CI/CD Pipeline (GitHub Actions) ✅ COMPLETED
 
 **Цель:** Автоматизация тестирования и деплоя
 
@@ -1474,19 +1531,45 @@ app.setErrorHandler((error, request, reply) => {
 
 ```yaml
 # .github/workflows/ci.yml
-- Run tests
-- Check coverage
-- Lint code
+- Lint code (ESLint + Prettier)
+- Type check (TypeScript)
 - Build TypeScript
-- Deploy to staging/production
+- Security audit (npm audit)
+- Run tests with coverage
+- Check coverage thresholds (80% minimum)
+- Comment PR with coverage report
+- Deploy to staging/production (optional)
 ```
+
+**Реализованные Jobs:**
+
+1. **lint** - Проверка ESLint и Prettier
+2. **typecheck** - Проверка типов TypeScript
+3. **build** - Сборка проекта
+4. **security** - Проверка безопасности зависимостей (npm audit)
+5. **test** - Запуск тестов с coverage и проверкой thresholds
+6. **ci-success** - Финальная проверка успешности всех jobs
+
+**Coverage Thresholds:**
+
+Настроены минимальные пороги в `vitest.config.ts`:
+
+- Lines: 80%
+- Functions: 80%
+- Branches: 80%
+- Statements: 80%
+
+CI будет падать, если coverage упадет ниже этих порогов.
 
 **Acceptance Criteria:**
 
-- [ ] GitHub Actions workflow создан
-- [ ] Автоматические тесты на PR
-- [ ] Coverage проверка
-- [ ] Автоматический деплой (опционально)
+- [x] GitHub Actions workflow создан ✅
+- [x] Автоматические тесты на PR ✅
+- [x] Coverage проверка с thresholds ✅
+- [x] TypeScript type checking ✅
+- [x] Security audit (npm audit) ✅
+- [x] Coverage комментарии в PR ✅
+- [ ] Автоматический деплой (опционально, не реализован)
 
 ---
 
@@ -1866,7 +1949,7 @@ git push
 - Controllers: 77%+ ✅
 - Routes: 100% ✅
 - Schemas: 100% ✅
-- Tests: 220 total (202 core + 18 email)
+- Tests: 233 total across 15 test files
 
 ---
 
@@ -1928,5 +2011,17 @@ git commit -m "feat: implement profile management API"
 
 ---
 
-**Last Updated:** 2026-01-19
+**Last Updated:** 2026-01-16
 **Next Milestone:** Plaid Integration (Income & Identity Verification) or CI/CD Pipeline
+
+## 📝 Recent Updates
+
+### 2026-01-16: Standardized Error Handling
+
+- ✅ Custom error classes implemented (`src/utils/errors.ts`)
+- ✅ Error response schemas for Swagger (`src/schemas/error.schema.ts`)
+- ✅ All controllers refactored to use standardized error classes
+- ✅ All routes updated with error response schemas
+- ✅ Global error handler configured in `app.ts`
+- ✅ Error handling tests added (`tests/errors.test.ts`)
+- ✅ Documentation updated (README.md, CLAUDE.md)
