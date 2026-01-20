@@ -1442,22 +1442,74 @@ response: {
 
 ---
 
-#### 4. Мониторинг и Логирование
+#### 4. Мониторинг и Логирование ✅ COMPLETED
 
 **Цель:** Отслеживание производительности и ошибок в production
 
-**Варианты:**
+**Реализация:**
 
-- **Sentry** - Error tracking
-- **DataDog** - APM и мониторинг
-- **Winston/Pino** - Structured logging
+**Structured Logging (Pino):**
+
+```typescript
+// src/utils/logger.ts
+import { logger, serviceLoggers } from './utils/logger.js';
+
+// Main logger
+logger.info({ port: 8000 }, 'Server started');
+
+// Service-specific loggers
+serviceLoggers.auth.info({ userId }, 'User logged in');
+serviceLoggers.payment.error({ error }, 'Payment failed');
+```
+
+**Features:**
+
+- JSON-формат логов для production
+- Pretty printing для development
+- Автоматическая редакция sensitive данных (passwords, tokens, etc.)
+- Service-specific логгеры для каждого модуля
+- Request ID трейсинг
+- Performance logging для медленных операций
+
+**Sentry Integration:**
+
+```typescript
+// src/utils/sentry.ts
+import { captureException, setUser } from './utils/sentry.js';
+
+// Автоматический capture 500 ошибок
+// Фильтрация 4xx ошибок (не баги)
+// User context для debugging
+```
+
+**Request/Response Logging:**
+
+```typescript
+// Middleware автоматически логирует:
+// - Request ID (x-request-id header)
+// - Method, URL, User ID
+// - Response time и status code
+// - Slow requests (>3s) как warnings
+```
+
+**Environment Variables:**
+
+```bash
+SENTRY_DSN=https://xxx@sentry.io/xxx  # Error tracking
+LOG_LEVEL=info                         # trace, debug, info, warn, error, fatal
+LOG_PRETTY=false                       # Pretty print in development
+```
 
 **Acceptance Criteria:**
 
-- [ ] Error tracking настроен (Sentry)
-- [ ] Structured logging реализован
-- [ ] Performance metrics собираются
-- [ ] Alerts настроены для критических ошибок
+- [x] Error tracking настроен (Sentry) ✅
+- [x] Structured logging реализован (Pino) ✅
+- [x] Request ID трейсинг ✅
+- [x] Service loggers для каждого модуля ✅
+- [x] Sensitive data redaction ✅
+- [x] Performance logging для медленных операций ✅
+- [x] Graceful shutdown с flush Sentry ✅
+- [ ] Alerts настроены для критических ошибок (в Sentry UI)
 
 ---
 

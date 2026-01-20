@@ -5,6 +5,9 @@ import { prisma } from '../db/client.js';
 import { config } from '../config.js';
 import { RegisterInput } from '../schemas/auth.schema.js';
 import { EmailService } from './email.service.js';
+import { serviceLoggers } from '../utils/logger.js';
+
+const log = serviceLoggers.auth;
 
 export class AuthService {
   private static readonly SALT_ROUNDS = 10;
@@ -97,7 +100,7 @@ export class AuthService {
 
     // Send verification email (fire and forget - don't block registration)
     EmailService.sendVerificationEmail(user.email, emailVerificationToken).catch((err) => {
-      console.error('Failed to send verification email:', err);
+      log.error({ error: err, userId: user.id }, 'Failed to send verification email');
     });
 
     // Generate token
@@ -216,7 +219,7 @@ export class AuthService {
 
     // Send welcome email
     EmailService.sendWelcomeEmail(user.email).catch((err) => {
-      console.error('Failed to send welcome email:', err);
+      log.error({ error: err, userId: user.id }, 'Failed to send welcome email');
     });
 
     return { message: 'Email successfully verified' };
@@ -255,7 +258,7 @@ export class AuthService {
 
     // Send verification email
     EmailService.sendVerificationEmail(email, emailVerificationToken).catch((err) => {
-      console.error('Failed to send verification email:', err);
+      log.error({ error: err, email }, 'Failed to send verification email');
     });
 
     return { message: 'If the email exists, a verification link has been sent' };
@@ -290,7 +293,7 @@ export class AuthService {
 
     // Send password reset email
     EmailService.sendPasswordResetEmail(email, passwordResetToken).catch((err) => {
-      console.error('Failed to send password reset email:', err);
+      log.error({ error: err, email }, 'Failed to send password reset email');
     });
 
     return { message: 'If the email exists, a password reset link has been sent' };

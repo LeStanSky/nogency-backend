@@ -110,10 +110,10 @@ nogency-back/
 ├── src/
 │   ├── routes/           # API routes
 │   ├── controllers/      # Business logic
-│   ├── services/         # External services (AI, Storage, Stripe)
-│   ├── middleware/       # Auth middleware
+│   ├── services/         # External services (AI, Storage, Stripe, Email)
+│   ├── middleware/       # Auth + Logging middleware
 │   ├── schemas/          # Zod validation + Error schemas
-│   ├── utils/            # Error classes + utilities
+│   ├── utils/            # Error classes, Logger, Sentry
 │   ├── db/               # Prisma client
 │   ├── types/            # TypeScript types
 │   ├── config.ts         # Configuration
@@ -150,6 +150,14 @@ ANTHROPIC_API_KEY=sk-ant-xxx
 STRIPE_SECRET_KEY=sk_test_xxx
 STRIPE_WEBHOOK_SECRET=whsec_xxx
 FRONTEND_URL=http://localhost:3000
+```
+
+**Опциональные переменные (мониторинг):**
+
+```env
+SENTRY_DSN=https://xxx@sentry.io/xxx  # Error tracking
+LOG_LEVEL=info                         # Уровень логирования
+LOG_PRETTY=false                       # Pretty print в development
 ```
 
 ### 2.5. Настройка Git (Line Endings)
@@ -267,6 +275,23 @@ npm run test:coverage  # With coverage
   }
   ```
 
+## Мониторинг и Логирование
+
+- **Structured Logging (Pino):** JSON-формат для production, pretty printing для development
+- **Sentry Integration:** Error tracking для 500 ошибок (4xx фильтруются)
+- **Request ID Tracing:** Уникальный ID для каждого запроса (x-request-id header)
+- **Sensitive Data Redaction:** Автоматическая редакция паролей, токенов, API ключей
+- **Performance Logging:** Warnings для медленных запросов (>3s)
+- **Service Loggers:** Отдельные логгеры для каждого модуля (auth, payment, email, etc.)
+
+**Environment Variables:**
+
+```env
+SENTRY_DSN=https://xxx@sentry.io/xxx  # Error tracking (optional)
+LOG_LEVEL=info                         # trace, debug, info, warn, error, fatal
+LOG_PRETTY=false                       # Pretty print in development
+```
+
 ## Безопасность
 
 - JWT authentication (7 days expiry)
@@ -277,6 +302,7 @@ npm run test:coverage  # With coverage
 - SQL injection protection via Prisma
 - Stripe webhook signature verification
 - Standardized error handling (no sensitive data leakage)
+- Rate limiting (100 req/min global, 10 req/min for auth)
 
 ## License
 
@@ -284,11 +310,20 @@ MIT
 
 ---
 
-**Last Updated:** 2026-01-16
+**Last Updated:** 2026-01-20
 **Version:** 1.0.0
 **Tests:** 233 passing
 
 ## Changelog
+
+### 2026-01-20
+
+- ✅ Добавлен structured logging (Pino)
+- ✅ Интеграция Sentry для error tracking
+- ✅ Request ID tracing middleware
+- ✅ Service-specific логгеры
+- ✅ Graceful shutdown с flush Sentry
+- ✅ Обновлена документация
 
 ### 2026-01-16
 

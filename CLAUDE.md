@@ -88,7 +88,8 @@ npm run format           # Format with Prettier
 - CORS configured for frontend URL
 - Multipart plugin for file uploads (10MB limit)
 - Routes registered with `/api/v1` prefix
-- Logging: info (dev) / error (prod)
+- Structured logging with Pino (JSON in prod, pretty in dev)
+- Sentry integration for error tracking
 - Rate limiting: 100 req/min global, 10 req/min for auth (disabled in test)
 
 **Config:** `src/config.ts` - Centralized configuration from environment variables
@@ -371,6 +372,54 @@ if (!parseResult.success) {
   throw new ValidationError('Validation failed', parseResult.error.flatten().fieldErrors);
 }
 // Если валидация прошла, используем parseResult.data
+```
+
+**Logging (Structured):**
+
+Проект использует структурированное логирование через `src/utils/logger.ts`:
+
+```typescript
+import { logger, serviceLoggers } from '../utils/logger.js';
+
+// Main logger
+logger.info({ port: 8000, environment: 'production' }, 'Server started');
+
+// Service-specific loggers (recommended)
+serviceLoggers.auth.info({ userId: user.id }, 'User logged in');
+serviceLoggers.payment.error({ error, paymentId }, 'Payment failed');
+serviceLoggers.email.debug({ to, subject }, 'Email sent');
+```
+
+**Available Service Loggers:**
+
+- `serviceLoggers.auth` - Authentication operations
+- `serviceLoggers.documents` - Document operations
+- `serviceLoggers.ai` - AI/Claude operations
+- `serviceLoggers.storage` - Supabase Storage
+- `serviceLoggers.payment` - Stripe payments
+- `serviceLoggers.email` - Email sending
+- `serviceLoggers.scoring` - Tenant scoring
+- `serviceLoggers.contract` - Contract operations
+- `serviceLoggers.application` - Applications
+- `serviceLoggers.listing` - Listings
+- `serviceLoggers.property` - Properties
+- `serviceLoggers.profile` - Profiles
+- `serviceLoggers.health` - Health checks
+
+**Log Levels:** `trace`, `debug`, `info`, `warn`, `error`, `fatal`
+
+**Sensitive Data:** Automatically redacted (passwords, tokens, API keys, etc.)
+
+**Sentry Integration (`src/utils/sentry.ts`):**
+
+```typescript
+import { captureException, setUser } from '../utils/sentry.js';
+
+// Capture unexpected errors
+captureException(error, { userId, operation: 'payment' });
+
+// Set user context for debugging
+setUser({ id: user.id, email: user.email, role: 'OWNER' });
 ```
 
 ## Important Notes

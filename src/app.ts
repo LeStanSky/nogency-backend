@@ -6,6 +6,9 @@ import swagger from '@fastify/swagger';
 import swaggerUi from '@fastify/swagger-ui';
 import { config } from './config.js';
 import { AppError } from './utils/errors.js';
+import { logger } from './utils/logger.js';
+import { initSentry, captureException } from './utils/sentry.js';
+import { registerLoggingHooks } from './middleware/logging.middleware.js';
 import authRoutes from './routes/auth.routes.js';
 import profileRoutes from './routes/profile.routes.js';
 import documentsRoutes from './routes/documents.routes.js';
@@ -21,11 +24,14 @@ interface AppOptions {
 }
 
 export const createApp = async (options?: AppOptions): Promise<FastifyInstance> => {
+  // Initialize Sentry for error tracking
+  initSentry();
+
   const enableRateLimit = options?.enableRateLimit ?? config.env !== 'test';
   const app = Fastify({
-    logger: {
-      level: config.env === 'development' ? 'info' : 'error',
-    },
+    logger: false, // We use our own logger via logging middleware
+    requestIdHeader: 'x-request-id',
+    requestIdLogLabel: 'requestId',
     // Custom schema error formatter for standardized validation errors
     schemaErrorFormatter: (errors, dataVar) => {
       const formattedErrors = errors.map((err) => ({
@@ -111,6 +117,9 @@ export const createApp = async (options?: AppOptions): Promise<FastifyInstance> 
     staticCSP: true,
   });
 
+  // Register logging hooks for request/response logging
+  registerLoggingHooks(app);
+
   // Register global rate limiting (disabled in test environment by default)
   if (enableRateLimit) {
     await app.register(rateLimit, {
@@ -151,8 +160,21 @@ export const createApp = async (options?: AppOptions): Promise<FastifyInstance> 
 
   // Global error handler for standardized error responses
   app.setErrorHandler((error: FastifyError | AppError | Error, request, reply) => {
-    // Log error for debugging
-    request.log.error(error);
+    // Log error with context
+    logger.error(
+      {
+        requestId: request.requestContext?.requestId,
+        method: request.method,
+        url: request.url,
+        userId: request.requestContext?.userId,
+        error: {
+          message: error.message,
+          name: error.name,
+          stack: error.stack,
+        },
+      },
+      `Error handling request: ${error.message}`
+    );
 
     // Build error response
     let errorResponse: {
@@ -189,7 +211,14 @@ export const createApp = async (options?: AppOptions): Promise<FastifyInstance> 
         ...(config.env === 'development' && { stack: error.stack }),
       };
     } else {
-      // Handle unknown errors
+      // Handle unknown errors - send to Sentry
+      captureException(error, {
+        requestId: request.requestContext?.requestId,
+        method: request.method,
+        url: request.url,
+        userId: request.requestContext?.userId,
+      });
+
       errorResponse = {
         error: config.env === 'production' ? 'Internal server error' : error.message,
         statusCode: 500,

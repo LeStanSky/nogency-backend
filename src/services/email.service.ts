@@ -1,5 +1,8 @@
 import { Resend } from 'resend';
 import { config } from '../config.js';
+import { serviceLoggers } from '../utils/logger.js';
+
+const log = serviceLoggers.email;
 
 // Initialize Resend client (only if API key is provided)
 const resend = config.email.resendApiKey ? new Resend(config.email.resendApiKey) : null;
@@ -27,7 +30,7 @@ export class EmailService {
   static async sendEmail(options: SendEmailOptions): Promise<EmailResult> {
     // In test environment or if no API key, simulate success
     if (config.env === 'test' || !resend) {
-      console.log(`📧 [Mock] Email sent to ${options.to}: ${options.subject}`);
+      log.debug({ to: options.to, subject: options.subject }, 'Mock email sent');
       return {
         success: true,
         messageId: `mock-${Date.now()}`,
@@ -44,19 +47,23 @@ export class EmailService {
       });
 
       if (error) {
-        console.error('Email send error:', error);
+        log.error({ error, to: options.to, subject: options.subject }, 'Email send error');
         return {
           success: false,
           error: error.message,
         };
       }
 
+      log.info(
+        { messageId: data?.id, to: options.to, subject: options.subject },
+        'Email sent successfully'
+      );
       return {
         success: true,
         messageId: data?.id,
       };
     } catch (error) {
-      console.error('Email service error:', error);
+      log.error({ error, to: options.to, subject: options.subject }, 'Email service error');
       return {
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',

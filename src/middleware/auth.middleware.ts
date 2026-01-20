@@ -1,6 +1,9 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { AuthService } from '../services/auth.service.js';
 import { UnauthorizedError } from '../utils/errors.js';
+import { serviceLoggers } from '../utils/logger.js';
+
+const log = serviceLoggers.auth;
 
 /**
  * Auth middleware to protect routes
@@ -31,7 +34,7 @@ export async function authMiddleware(request: FastifyRequest, _reply: FastifyRep
     if (error instanceof UnauthorizedError) {
       throw error;
     }
-    request.log.error(error);
+    log.warn({ error }, 'Token verification failed');
     throw new UnauthorizedError('Invalid or expired token');
   }
 }

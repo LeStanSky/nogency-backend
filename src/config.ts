@@ -5,6 +5,7 @@ dotenv.config();
 interface Config {
   env: string;
   port: number;
+  version: string;
   frontendUrl: string;
   database: {
     url: string;
@@ -40,11 +41,19 @@ interface Config {
       timeWindow: string;
     };
   };
+  sentry: {
+    dsn: string;
+  };
+  logging: {
+    level: string;
+    pretty: boolean;
+  };
 }
 
 export const config: Config = {
   env: process.env.NODE_ENV || 'development',
   port: parseInt(process.env.PORT || '8000', 10),
+  version: process.env.npm_package_version || '1.0.0',
   frontendUrl: process.env.FRONTEND_URL || 'http://localhost:3000',
   database: {
     url: process.env.DATABASE_URL || '',
@@ -79,5 +88,12 @@ export const config: Config = {
       max: parseInt(process.env.RATE_LIMIT_AUTH_MAX || '10', 10),
       timeWindow: process.env.RATE_LIMIT_AUTH_TIME_WINDOW || '1 minute',
     },
+  },
+  sentry: {
+    dsn: process.env.SENTRY_DSN || '',
+  },
+  logging: {
+    level: process.env.LOG_LEVEL || 'info',
+    pretty: process.env.LOG_PRETTY === 'true',
   },
 };

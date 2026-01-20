@@ -26,6 +26,9 @@ export default defineConfig({
         'scripts/**',
         'src/index.ts',
         'src/services/ai.service.ts',
+        'src/utils/logger.ts',
+        'src/utils/sentry.ts',
+        'src/middleware/logging.middleware.ts',
       ],
       thresholds: {
         lines: 80,

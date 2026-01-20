@@ -1,5 +1,8 @@
 import { randomUUID } from 'crypto';
 import { supabaseAdmin } from '../db/client.js';
+import { serviceLoggers } from '../utils/logger.js';
+
+const log = serviceLoggers.storage;
 
 export class StorageService {
   private static readonly BUCKET_NAME = 'documents';
@@ -60,12 +63,13 @@ export class StorageService {
 
       if (error) {
         // Log error but don't throw - file might already be deleted
-        console.warn(`Storage delete warning: ${error.message}`);
+        log.warn({ error: error.message, fileUrl }, 'Storage delete warning');
       }
     } catch (error) {
       // Log error but don't throw - allow deletion to continue
-      console.warn(
-        `Failed to delete file: ${error instanceof Error ? error.message : 'Unknown error'}`
+      log.warn(
+        { error: error instanceof Error ? error.message : 'Unknown error', fileUrl },
+        'Failed to delete file'
       );
     }
   }
