@@ -10,8 +10,21 @@ export interface ScoringResult {
   rentalHistoryScore: number;
   verificationScore: number;
   criteriaMatchScore: number;
+  financialStabilityScore: number | null;
   riskLevel: RiskLevel;
   notes: string;
+}
+
+interface PlaidData {
+  incomeStreams?: Array<{
+    name: string | null;
+    amount: number;
+    frequency: string | null;
+    confidence: number | null;
+  }>;
+  accountBalance?: number;
+  lastUpdated?: string;
+  paystubCount?: number;
 }
 
 export class ScoringService {
@@ -48,12 +61,27 @@ export class ScoringService {
     }
 
     const monthlyRent = Number(application.listing.monthlyRent);
-    const monthlyIncome = application.tenant.monthlyIncome
+
+    // Use Plaid-verified income if available, otherwise use self-reported income
+    const incomeVerifiedViaPlaid = application.tenant.incomeVerifiedViaPlaid;
+    const plaidVerifiedMonthlyIncome = application.tenant.plaidVerifiedMonthlyIncome
+      ? Number(application.tenant.plaidVerifiedMonthlyIncome)
+      : null;
+    const selfReportedIncome = application.tenant.monthlyIncome
       ? Number(application.tenant.monthlyIncome)
       : null;
 
-    // 1. Income Score (0-100)
-    const incomeScore = this.calculateIncomeScore(monthlyIncome, monthlyRent);
+    const monthlyIncome =
+      incomeVerifiedViaPlaid && plaidVerifiedMonthlyIncome
+        ? plaidVerifiedMonthlyIncome
+        : selfReportedIncome;
+
+    // 1. Income Score (0-100) - enhanced with Plaid verification bonus
+    const incomeScore = this.calculateIncomeScore(
+      monthlyIncome,
+      monthlyRent,
+      incomeVerifiedViaPlaid
+    );
 
     // 2. Employment Score (0-100)
     const employmentScore = this.calculateEmploymentScore(
@@ -65,10 +93,11 @@ export class ScoringService {
     // 3. Rental History Score (0-100)
     const rentalHistoryScore = this.calculateRentalHistoryScore(application.tenant);
 
-    // 4. Verification Score (0-100)
+    // 4. Verification Score (0-100) - includes Plaid verification
     const verificationScore = this.calculateVerificationScore(
       application.tenant.user.documents,
-      application.documents
+      application.documents,
+      incomeVerifiedViaPlaid
     );
 
     // 5. Criteria Match Score (0-100)
@@ -77,10 +106,30 @@ export class ScoringService {
       application.listing.preferredTenantCriteria
     );
 
-    // Calculate total score (average of all scores)
-    const scores =
-      incomeScore + employmentScore + rentalHistoryScore + verificationScore + criteriaMatchScore;
-    const totalScore = Math.round(scores / 5);
+    // 6. Financial Stability Score (0-100) - only if Plaid connected
+    const plaidData = application.tenant.plaidData as PlaidData | null;
+    const financialStabilityScore = incomeVerifiedViaPlaid
+      ? this.calculateFinancialStabilityScore(plaidData)
+      : null;
+
+    // Calculate total score
+    // If Plaid is connected: average of 6 scores
+    // If not: average of 5 scores (excluding financial stability)
+    let totalScore: number;
+    if (financialStabilityScore !== null) {
+      const scores =
+        incomeScore +
+        employmentScore +
+        rentalHistoryScore +
+        verificationScore +
+        criteriaMatchScore +
+        financialStabilityScore;
+      totalScore = Math.round(scores / 6);
+    } else {
+      const scores =
+        incomeScore + employmentScore + rentalHistoryScore + verificationScore + criteriaMatchScore;
+      totalScore = Math.round(scores / 5);
+    }
 
     const riskLevel = this.calculateRiskLevel(totalScore);
     const notes = this.generateNotes({
@@ -89,6 +138,8 @@ export class ScoringService {
       rentalHistoryScore,
       verificationScore,
       criteriaMatchScore,
+      financialStabilityScore,
+      incomeVerifiedViaPlaid,
     });
 
     // Save or update scoring in database
@@ -102,6 +153,8 @@ export class ScoringService {
         rentalHistoryScore: new Decimal(rentalHistoryScore),
         verificationScore: new Decimal(verificationScore),
         criteriaMatchScore: new Decimal(criteriaMatchScore),
+        financialStabilityScore:
+          financialStabilityScore !== null ? new Decimal(financialStabilityScore) : null,
         riskLevel,
         notes,
         calculatedAt: new Date(),
@@ -113,6 +166,8 @@ export class ScoringService {
         rentalHistoryScore: new Decimal(rentalHistoryScore),
         verificationScore: new Decimal(verificationScore),
         criteriaMatchScore: new Decimal(criteriaMatchScore),
+        financialStabilityScore:
+          financialStabilityScore !== null ? new Decimal(financialStabilityScore) : null,
         riskLevel,
         notes,
         calculatedAt: new Date(),
@@ -134,6 +189,7 @@ export class ScoringService {
       rentalHistoryScore,
       verificationScore,
       criteriaMatchScore,
+      financialStabilityScore,
       riskLevel,
       notes,
     };
@@ -142,19 +198,39 @@ export class ScoringService {
   /**
    * Income Score: ratio of income to rent
    * Ideal: income >= 3x rent = 100 points
+   * Bonus for Plaid-verified income
    */
-  private static calculateIncomeScore(monthlyIncome: number | null, monthlyRent: number): number {
+  private static calculateIncomeScore(
+    monthlyIncome: number | null,
+    monthlyRent: number,
+    incomeVerifiedViaPlaid: boolean
+  ): number {
     if (!monthlyIncome || monthlyIncome <= 0) return 0;
     if (monthlyRent <= 0) return 100;
 
     const ratio = monthlyIncome / monthlyRent;
 
-    if (ratio >= 4) return 100; // Excellent
-    if (ratio >= 3) return 90; // Very good
-    if (ratio >= 2.5) return 75; // Good
-    if (ratio >= 2) return 60; // Acceptable
-    if (ratio >= 1.5) return 40; // Risky
-    return 20; // High risk
+    let baseScore: number;
+    if (ratio >= 4) {
+      baseScore = 100; // Excellent
+    } else if (ratio >= 3) {
+      baseScore = 90; // Very good
+    } else if (ratio >= 2.5) {
+      baseScore = 75; // Good
+    } else if (ratio >= 2) {
+      baseScore = 60; // Acceptable
+    } else if (ratio >= 1.5) {
+      baseScore = 40; // Risky
+    } else {
+      baseScore = 20; // High risk
+    }
+
+    // Bonus for Plaid-verified income (+10 points, capped at 100)
+    if (incomeVerifiedViaPlaid) {
+      return Math.min(baseScore + 10, 100);
+    }
+
+    return baseScore;
   }
 
   /**
@@ -213,28 +289,96 @@ export class ScoringService {
 
   /**
    * Verification Score: document verification level
+   * Includes bonus for Plaid income verification
    */
   private static calculateVerificationScore(
     userDocs: { type: string; status: string }[],
-    applicationDocs: { type: string; status: string }[]
+    applicationDocs: { type: string; status: string }[],
+    incomeVerifiedViaPlaid: boolean
   ): number {
     const allDocs = [...userDocs, ...applicationDocs];
 
-    if (allDocs.length === 0) return 0;
+    // Start with base score for Plaid verification
+    let score = incomeVerifiedViaPlaid ? 30 : 0;
+
+    if (allDocs.length === 0) {
+      // Only Plaid verification counts
+      return incomeVerifiedViaPlaid ? 50 : 0;
+    }
 
     const verifiedCount = allDocs.filter((d) => d.status === 'VERIFIED').length;
     const totalCount = allDocs.length;
 
-    // Base verification percentage
-    const verificationRate = (verifiedCount / totalCount) * 100;
+    // Base verification percentage (scaled to remaining points)
+    const maxDocScore = incomeVerifiedViaPlaid ? 50 : 80;
+    const verificationRate = (verifiedCount / totalCount) * maxDocScore;
+    score += verificationRate;
 
     // Bonus for ID verification
     const hasVerifiedId = userDocs.some(
       (d) => ['ID', 'NIE_TIE'].includes(d.type) && d.status === 'VERIFIED'
     );
-    const idBonus = hasVerifiedId ? 20 : 0;
+    if (hasVerifiedId) score += 20;
 
-    return Math.min(Math.round(verificationRate * 0.8 + idBonus), 100);
+    return Math.min(Math.round(score), 100);
+  }
+
+  /**
+   * Financial Stability Score: analyze Plaid data for financial health
+   * Only calculated when Plaid is connected
+   */
+  private static calculateFinancialStabilityScore(plaidData: PlaidData | null): number {
+    let score = 50; // Base score
+
+    if (!plaidData) {
+      return score;
+    }
+
+    // Bonus for having income streams
+    const incomeStreams = plaidData.incomeStreams || [];
+    if (incomeStreams.length > 0) {
+      score += 15; // Has verified income sources
+    }
+
+    // Bonus for multiple income streams (diversified income)
+    if (incomeStreams.length > 1) {
+      score += 10;
+    }
+
+    // Bonus for high confidence scores
+    const avgConfidence =
+      incomeStreams.length > 0
+        ? incomeStreams.reduce((sum, s) => sum + (s.confidence || 0), 0) / incomeStreams.length
+        : 0;
+    if (avgConfidence > 0.9) {
+      score += 10;
+    } else if (avgConfidence > 0.7) {
+      score += 5;
+    }
+
+    // Bonus for positive account balance (if available)
+    const accountBalance = plaidData.accountBalance;
+    if (accountBalance !== undefined && accountBalance !== null) {
+      if (accountBalance > 10000) {
+        score += 15; // Strong savings
+      } else if (accountBalance > 5000) {
+        score += 10; // Good savings
+      } else if (accountBalance > 1000) {
+        score += 5; // Some savings
+      } else if (accountBalance < 0) {
+        score -= 10; // Overdraft (negative indicator)
+      }
+    }
+
+    // Bonus for multiple paystubs (indicates stable employment)
+    const paystubCount = plaidData.paystubCount || 0;
+    if (paystubCount >= 3) {
+      score += 10; // 3+ months of paystubs
+    } else if (paystubCount >= 2) {
+      score += 5; // 2 months of paystubs
+    }
+
+    return Math.min(Math.max(score, 0), 100);
   }
 
   /**
@@ -315,8 +459,18 @@ export class ScoringService {
     rentalHistoryScore: number;
     verificationScore: number;
     criteriaMatchScore: number;
+    financialStabilityScore: number | null;
+    incomeVerifiedViaPlaid: boolean;
   }): string {
     const recommendations: string[] = [];
+
+    // Plaid verification bonus note
+    if (scores.incomeVerifiedViaPlaid) {
+      recommendations.push(
+        '✓ Ingresos verificados a través de Plaid. ' +
+          'Los datos de ingresos provienen directamente de la institución financiera del inquilino.'
+      );
+    }
 
     if (scores.incomeScore < 60) {
       recommendations.push(
@@ -342,7 +496,27 @@ export class ScoringService {
       recommendations.push('El inquilino no cumple completamente con los criterios especificados.');
     }
 
-    if (recommendations.length === 0) {
+    // Financial stability recommendations
+    if (scores.financialStabilityScore !== null) {
+      if (scores.financialStabilityScore >= 80) {
+        recommendations.push('✓ Excelente estabilidad financiera verificada por Plaid.');
+      } else if (scores.financialStabilityScore < 50) {
+        recommendations.push(
+          'La estabilidad financiera del inquilino es baja según los datos de Plaid. ' +
+            'Considere solicitar garantías adicionales.'
+        );
+      }
+    } else if (!scores.incomeVerifiedViaPlaid) {
+      recommendations.push(
+        'El inquilino no ha conectado su cuenta bancaria a través de Plaid. ' +
+          'Solicite la verificación de ingresos para mayor seguridad.'
+      );
+    }
+
+    if (
+      recommendations.length === 0 ||
+      (recommendations.length === 1 && scores.incomeVerifiedViaPlaid)
+    ) {
       recommendations.push(
         'El inquilino cumple con todos los criterios. Se recomienda aprobar la solicitud.'
       );

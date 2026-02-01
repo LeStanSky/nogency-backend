@@ -149,6 +149,16 @@ model TenantProfile {
   rentalDurationMonths  Int?             @map("rental_duration_months")
   applicationSource     ApplicationSource? @map("application_source")
   isEmailVerified       Boolean          @default(false) @map("is_email_verified")
+
+  // Plaid Integration Fields
+  plaidAccessToken          String?   @map("plaid_access_token")
+  plaidItemId               String?   @map("plaid_item_id")
+  plaidInstitutionName      String?   @map("plaid_institution_name")
+  plaidVerifiedAt           DateTime? @map("plaid_verified_at")
+  incomeVerifiedViaPlaid    Boolean   @default(false) @map("income_verified_via_plaid")
+  plaidVerifiedMonthlyIncome Decimal? @map("plaid_verified_monthly_income") @db.Decimal(10, 2)
+  plaidData                 Json?     @map("plaid_data")
+
   createdAt             DateTime         @default(now()) @map("created_at")
   updatedAt             DateTime         @updatedAt @map("updated_at")
 
@@ -480,17 +490,18 @@ enum ApplicationDocumentType {
 }
 
 model TenantScoring {
-  id                   String      @id @default(uuid())
-  applicationId        String      @unique @map("application_id")
-  totalScore           Decimal     @map("total_score") @db.Decimal(5, 2)
-  incomeScore          Decimal     @map("income_score") @db.Decimal(5, 2)
-  employmentScore      Decimal     @map("employment_score") @db.Decimal(5, 2)
-  rentalHistoryScore   Decimal     @map("rental_history_score") @db.Decimal(5, 2)
-  verificationScore    Decimal     @map("verification_score") @db.Decimal(5, 2)
-  criteriaMatchScore   Decimal     @map("criteria_match_score") @db.Decimal(5, 2)
-  riskLevel            RiskLevel   @map("risk_level")
-  calculatedAt         DateTime    @map("calculated_at")
-  notes                String?     @db.Text
+  id                      String      @id @default(uuid())
+  applicationId           String      @unique @map("application_id")
+  totalScore              Decimal     @map("total_score") @db.Decimal(5, 2)
+  incomeScore             Decimal     @map("income_score") @db.Decimal(5, 2)
+  employmentScore         Decimal     @map("employment_score") @db.Decimal(5, 2)
+  rentalHistoryScore      Decimal     @map("rental_history_score") @db.Decimal(5, 2)
+  verificationScore       Decimal     @map("verification_score") @db.Decimal(5, 2)
+  criteriaMatchScore      Decimal     @map("criteria_match_score") @db.Decimal(5, 2)
+  financialStabilityScore Decimal?    @map("financial_stability_score") @db.Decimal(5, 2)
+  riskLevel               RiskLevel   @map("risk_level")
+  calculatedAt            DateTime    @map("calculated_at")
+  notes                   String?     @db.Text
 
   application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
 

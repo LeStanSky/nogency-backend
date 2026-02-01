@@ -114,6 +114,7 @@ export const serviceLoggers = {
   ai: createServiceLogger('ai'),
   storage: createServiceLogger('storage'),
   payment: createServiceLogger('payment'),
+  plaid: createServiceLogger('plaid'),
   email: createServiceLogger('email'),
   scoring: createServiceLogger('scoring'),
   contract: createServiceLogger('contract'),

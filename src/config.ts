@@ -48,6 +48,12 @@ interface Config {
     level: string;
     pretty: boolean;
   };
+  plaid: {
+    clientId: string;
+    secret: string;
+    env: string;
+    webhookUrl: string;
+  };
 }
 
 export const config: Config = {
@@ -95,5 +101,11 @@ export const config: Config = {
   logging: {
     level: process.env.LOG_LEVEL || 'info',
     pretty: process.env.LOG_PRETTY === 'true',
+  },
+  plaid: {
+    clientId: process.env.PLAID_CLIENT_ID || '',
+    secret: process.env.PLAID_SECRET || '',
+    env: process.env.PLAID_ENV || 'sandbox',
+    webhookUrl: process.env.PLAID_WEBHOOK_URL || '',
   },
 };

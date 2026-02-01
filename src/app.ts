@@ -17,6 +17,7 @@ import listingRoutes from './routes/listing.routes.js';
 import applicationRoutes from './routes/application.routes.js';
 import contractRoutes from './routes/contract.routes.js';
 import paymentRoutes from './routes/payment.routes.js';
+import plaidRoutes from './routes/plaid.routes.js';
 import healthRoutes from './routes/health.routes.js';
 
 interface AppOptions {
@@ -91,6 +92,7 @@ export const createApp = async (options?: AppOptions): Promise<FastifyInstance> 
         { name: 'Applications', description: 'Rental applications and AI scoring' },
         { name: 'Contracts', description: 'Lease contract management' },
         { name: 'Payments', description: 'Payment processing with Stripe' },
+        { name: 'Plaid', description: 'Plaid integration for income verification' },
         { name: 'Health', description: 'Health check endpoints' },
       ],
       components: {
@@ -258,6 +260,7 @@ export const createApp = async (options?: AppOptions): Promise<FastifyInstance> 
   await app.register(applicationRoutes, { prefix: '/api/v1/applications' });
   await app.register(contractRoutes, { prefix: '/api/v1/contracts' });
   await app.register(paymentRoutes, { prefix: '/api/v1/payments' });
+  await app.register(plaidRoutes, { prefix: '/api/v1/plaid' });
   await app.register(healthRoutes, { prefix: '/health' });
 
   return app;
