@@ -2,7 +2,7 @@
 
 Backend API для платформы управления арендой недвижимости с AI-скорингом арендаторов.
 
-**Статус:** Production-Ready | 233 теста | 86%+ coverage
+**Статус:** Production-Ready | 253 теста | 86%+ coverage
 
 ## Технологический стек
 
@@ -13,12 +13,13 @@ Backend API для платформы управления арендой нед
 - **ORM:** Prisma 5.x
 - **Testing:** Vitest (TDD approach)
 - **AI Integration:** Anthropic Claude API (Vision + Text)
+- **Income Verification:** Plaid
 - **Payments:** Stripe
 - **Email:** Resend
 - **File Storage:** Supabase Storage
 - **Authentication:** JWT + bcrypt
 
-## Реализованные API (Updated: 2026-01-16)
+## Реализованные API (Updated: 2026-02-01)
 
 ### Authentication API
 
@@ -103,6 +104,17 @@ Backend API для платформы управления арендой нед
 | POST   | `/api/v1/payments/webhook`       | Stripe webhook handler       |
 | GET    | `/api/v1/contracts/:id/payments` | Get payments by contract     |
 
+### Plaid Income Verification API
+
+| Method | Endpoint                       | Description                      |
+| ------ | ------------------------------ | -------------------------------- |
+| POST   | `/api/v1/plaid/link-token`     | Create Plaid Link token          |
+| POST   | `/api/v1/plaid/exchange-token` | Exchange public token for access |
+| GET    | `/api/v1/plaid/income`         | Get verified income data         |
+| GET    | `/api/v1/plaid/status`         | Get Plaid connection status      |
+| DELETE | `/api/v1/plaid/disconnect`     | Disconnect Plaid account         |
+| POST   | `/api/v1/plaid/webhook`        | Handle Plaid webhooks            |
+
 ## Структура проекта
 
 ```
@@ -119,7 +131,7 @@ nogency-back/
 │   ├── config.ts         # Configuration
 │   ├── app.ts            # Fastify app
 │   └── index.ts          # Entry point
-├── tests/                # Test files (233 tests)
+├── tests/                # Test files (253 tests)
 ├── prisma/               # Database schema
 └── package.json
 ```
@@ -150,6 +162,9 @@ ANTHROPIC_API_KEY=sk-ant-xxx
 STRIPE_SECRET_KEY=sk_test_xxx
 STRIPE_WEBHOOK_SECRET=whsec_xxx
 FRONTEND_URL=http://localhost:3000
+PLAID_CLIENT_ID=your-plaid-client-id
+PLAID_SECRET=your-plaid-secret
+PLAID_ENV=sandbox
 ```
 
 **Опциональные переменные (мониторинг):**
@@ -235,15 +250,13 @@ npm run test:coverage  # With coverage
 
 ## Test Coverage
 
-- **233 теста** across 15 test files
+- **253 теста** across 16 test files
 - **86%+ overall coverage**
 - All APIs fully tested
 
 ## Документация
 
 - [NEXT-STEPS.md](./NEXT-STEPS.md) - Development roadmap
-- [GIT-WORKFLOW.md](./GIT-WORKFLOW.md) - Git workflow
-- [HOOKS.md](./HOOKS.md) - Git hooks
 - [CLAUDE.md](./CLAUDE.md) - Claude Code instructions
 
 ## Обработка ошибок
@@ -301,6 +314,7 @@ LOG_PRETTY=false                       # Pretty print in development
 - Input validation via Zod
 - SQL injection protection via Prisma
 - Stripe webhook signature verification
+- Plaid access tokens encrypted (AES-256-CBC)
 - Standardized error handling (no sensitive data leakage)
 - Rate limiting (100 req/min global, 10 req/min for auth)
 
@@ -310,11 +324,21 @@ MIT
 
 ---
 
-**Last Updated:** 2026-01-20
-**Version:** 1.0.0
-**Tests:** 233 passing
+**Last Updated:** 2026-02-01
+**Version:** 1.1.0
+**Tests:** 253 passing
 
 ## Changelog
+
+### 2026-02-01
+
+- ✅ Интеграция Plaid для верификации доходов
+- ✅ 6 новых API endpoints для Plaid
+- ✅ AES-256-CBC шифрование Plaid access tokens
+- ✅ Улучшенный AI scoring (6 компонентов вместо 5)
+- ✅ FinancialStabilityScore добавлен в TenantScoring
+- ✅ 20 новых тестов для Plaid интеграции
+- ✅ Обновлена документация
 
 ### 2026-01-20
 
