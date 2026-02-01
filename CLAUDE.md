@@ -8,7 +8,7 @@ NoGency AI is a backend API for a rental property management platform with AI-po
 
 **Tech Stack:** Node.js 20+, TypeScript 5+, Fastify 4.x, Prisma 5.x, PostgreSQL 15, Vitest
 
-**Current Status:** Production-ready with 233 tests, 86%+ coverage
+**Current Status:** Production-ready with 253 tests, 86%+ coverage
 
 ## Essential Commands
 
@@ -120,6 +120,7 @@ All APIs are fully implemented with tests:
 6. **Applications API** (`/api/v1/applications`) - Applications with AI scoring
 7. **Contracts API** (`/api/v1/contracts`) - Contract lifecycle, signing
 8. **Payments API** (`/api/v1/payments`) - Stripe integration, webhooks
+9. **Plaid API** (`/api/v1/plaid`) - Income verification via Plaid, enhanced scoring
 
 ### Database Schema (Prisma)
 
@@ -157,7 +158,7 @@ npm run db:migrate   # Create migration for production
 - Tests in `tests/` directory
 - File naming: `*.test.ts`
 - Setup file: `tests/setup.ts`
-- 233 tests across 15 files
+- 253 tests across 16 files
 - Coverage: 86%+
 
 **TDD Cycle:**
@@ -193,6 +194,10 @@ STRIPE_SECRET_KEY         # Stripe secret
 STRIPE_WEBHOOK_SECRET     # Stripe webhook secret
 RESEND_API_KEY            # Email service
 FRONTEND_URL              # CORS allowed origin
+PLAID_CLIENT_ID           # Plaid client ID
+PLAID_SECRET              # Plaid secret key
+PLAID_ENV                 # Plaid environment (sandbox/development/production)
+PLAID_WEBHOOK_URL         # Plaid webhook URL (optional)
 ```
 
 Copy `.env.example` to `.env` and fill in values.
@@ -405,6 +410,7 @@ serviceLoggers.email.debug({ to, subject }, 'Email sent');
 - `serviceLoggers.property` - Properties
 - `serviceLoggers.profile` - Profiles
 - `serviceLoggers.health` - Health checks
+- `serviceLoggers.plaid` - Plaid income verification
 
 **Log Levels:** `trace`, `debug`, `info`, `warn`, `error`, `fatal`
 
@@ -485,7 +491,9 @@ body: {
 
 See [NEXT-STEPS.md](./NEXT-STEPS.md) for detailed roadmap:
 
-- Plaid Integration (Income Verification)
-- API Documentation (Swagger/OpenAPI)
-- Rate Limiting
-- Email Notifications (Resend)
+- ~~Plaid Integration (Income Verification)~~ ✅ COMPLETED
+- ~~API Documentation (Swagger/OpenAPI)~~ ✅ COMPLETED
+- ~~Rate Limiting~~ ✅ COMPLETED
+- ~~Email Notifications (Resend)~~ ✅ COMPLETED
+- PDF Generation for Contracts (optional)
+- Redis Caching (performance optimization)
