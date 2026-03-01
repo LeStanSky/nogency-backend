@@ -9,6 +9,7 @@ import {
   IncomeVerificationPaystubsGetRequest,
 } from 'plaid';
 import crypto from 'crypto';
+import { Prisma } from '@prisma/client';
 import { prisma } from '../db/client.js';
 import { config } from '../config.js';
 import { ExchangeTokenInput, PlaidWebhookPayload } from '../schemas/plaid.schema.js';
@@ -342,7 +343,7 @@ export class PlaidService {
         plaidVerifiedAt: null,
         incomeVerifiedViaPlaid: false,
         plaidVerifiedMonthlyIncome: null,
-        plaidData: null,
+        plaidData: Prisma.JsonNull,
       },
     });
 
