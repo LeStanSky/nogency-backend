@@ -185,6 +185,45 @@ export class ContractController {
   }
 
   /**
+   * Get contract document URL
+   * GET /api/v1/contracts/:id/document
+   */
+  static async getContractDocument(request: FastifyRequest, reply: FastifyReply) {
+    const userId = request.userId;
+    if (!userId) {
+      throw new UnauthorizedError();
+    }
+    const { id } = request.params as { id: string };
+
+    try {
+      const contract = await ContractService.getContractById(id, userId);
+
+      if (!contract) {
+        throw new NotFoundError('Contract not found');
+      }
+
+      if (!contract.documentUrl) {
+        throw new BadRequestError(
+          'Contract document has not been generated yet. Send the contract for signing first.'
+        );
+      }
+
+      return reply.send({
+        documentUrl: contract.documentUrl,
+        contractNumber: contract.contractNumber,
+      });
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+
+      if (message === 'Access denied') {
+        throw new ForbiddenError(message);
+      }
+
+      throw error;
+    }
+  }
+
+  /**
    * Terminate contract
    * POST /api/v1/contracts/:id/terminate
    */

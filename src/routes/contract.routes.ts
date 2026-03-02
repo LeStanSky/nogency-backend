@@ -56,6 +56,12 @@ export default async function contractRoutes(app: FastifyInstance) {
             description: 'Who pays utilities',
           },
           sublettingAllowed: { type: 'boolean', default: false },
+          leaseType: {
+            type: 'string',
+            enum: ['RESIDENTIAL', 'SEASONAL'],
+            default: 'RESIDENTIAL',
+            description: 'LAU Title II (residential) or Title III (seasonal)',
+          },
         },
         examples: [
           {
@@ -371,6 +377,59 @@ export default async function contractRoutes(app: FastifyInstance) {
       },
     },
     handler: ContractController.terminateContract,
+  });
+
+  // Get contract document URL
+  app.get('/:id/document', {
+    schema: {
+      description: 'Get the generated PDF document URL for a contract',
+      tags: ['Contracts'],
+      security: [{ bearerAuth: [] }],
+      params: {
+        type: 'object',
+        required: ['id'],
+        properties: {
+          id: { type: 'string', format: 'uuid' },
+        },
+      },
+      response: {
+        200: {
+          description: 'Contract document URL',
+          type: 'object',
+          additionalProperties: true,
+          examples: [
+            {
+              documentUrl: 'https://storage.supabase.co/contracts/abc123.pdf',
+              contractNumber: 'CTR-2026-ABCD1234',
+            },
+          ],
+        },
+        400: {
+          description: 'Document not yet generated',
+          ...errorResponseSchema,
+          examples: [
+            {
+              error:
+                'Contract document has not been generated yet. Send the contract for signing first.',
+              statusCode: 400,
+              code: 'BAD_REQUEST',
+            },
+          ],
+        },
+        404: {
+          description: 'Contract not found',
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Contract not found',
+              statusCode: 404,
+              code: 'NOT_FOUND',
+            },
+          ],
+        },
+      },
+    },
+    handler: ContractController.getContractDocument,
   });
 
   // Get payments for a specific contract

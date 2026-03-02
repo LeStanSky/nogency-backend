@@ -47,6 +47,37 @@ export class StorageService {
   }
 
   /**
+   * Upload contract PDF to Supabase Storage at a predictable path
+   */
+  static async uploadContractPdf(contractId: string, pdfBuffer: Buffer): Promise<string> {
+    try {
+      const filePath = `contracts/${contractId}.pdf`;
+
+      const { data, error } = await supabaseAdmin.storage
+        .from(this.BUCKET_NAME)
+        .upload(filePath, pdfBuffer, {
+          contentType: 'application/pdf',
+          upsert: true,
+        });
+
+      if (error) {
+        throw new Error(`Contract PDF upload failed: ${error.message}`);
+      }
+
+      const { data: urlData } = supabaseAdmin.storage
+        .from(this.BUCKET_NAME)
+        .getPublicUrl(data.path);
+
+      log.info({ contractId, path: data.path }, 'Contract PDF uploaded');
+      return urlData.publicUrl;
+    } catch (error) {
+      throw new Error(
+        `Failed to upload contract PDF: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
    * Delete file from Supabase Storage
    */
   static async deleteFile(fileUrl: string): Promise<void> {

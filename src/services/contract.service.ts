@@ -6,6 +6,11 @@ import {
 } from '../schemas/contract.schema.js';
 import { nanoid } from 'nanoid';
 import { Prisma, ContractStatus } from '@prisma/client';
+import { ContractPdfService } from './contract-pdf.service.js';
+import { StorageService } from './storage.service.js';
+import { serviceLoggers } from '../utils/logger.js';
+
+const log = serviceLoggers.contract;
 
 export class ContractService {
   /**
@@ -76,6 +81,7 @@ export class ContractService {
         paymentDueDay: input.paymentDueDay,
         utilitiesResponsibility: input.utilitiesResponsibility,
         sublettingAllowed: input.sublettingAllowed || false,
+        leaseType: input.leaseType || 'RESIDENTIAL',
         status: 'DRAFT',
       },
       include: {
@@ -266,6 +272,27 @@ export class ContractService {
   static async sendForSigning(contractId: string, ownerProfileId: string) {
     const contract = await prisma.leaseContract.findUnique({
       where: { id: contractId },
+      include: {
+        listing: {
+          include: {
+            property: true,
+          },
+        },
+        tenant: {
+          include: {
+            user: {
+              select: { email: true },
+            },
+          },
+        },
+        owner: {
+          include: {
+            user: {
+              select: { email: true },
+            },
+          },
+        },
+      },
     });
 
     if (!contract) {
@@ -280,10 +307,57 @@ export class ContractService {
       throw new Error('Only DRAFT contracts can be sent for signing');
     }
 
+    // Generate PDF and upload to storage
+    let documentUrl: string | undefined;
+    try {
+      const pdfBuffer = await ContractPdfService.generateContract({
+        id: contract.id,
+        contractNumber: contract.contractNumber,
+        leaseType: contract.leaseType as 'RESIDENTIAL' | 'SEASONAL',
+        startDate: contract.startDate,
+        endDate: contract.endDate,
+        monthlyRent: contract.monthlyRent,
+        depositAmount: contract.depositAmount,
+        depositMonths: contract.depositMonths,
+        additionalGuaranteeMonths: contract.additionalGuaranteeMonths,
+        paymentDueDay: contract.paymentDueDay,
+        utilitiesResponsibility: contract.utilitiesResponsibility as 'OWNER' | 'TENANT' | 'SHARED',
+        sublettingAllowed: contract.sublettingAllowed,
+        owner: {
+          firstName: contract.owner.firstName,
+          lastName: contract.owner.lastName,
+          documentType: contract.owner.documentType,
+          documentNumber: contract.owner.documentNumber,
+          bankAccountIban: contract.owner.bankAccountIban,
+          user: { email: contract.owner.user.email },
+        },
+        tenant: {
+          firstName: contract.tenant.firstName,
+          lastName: contract.tenant.lastName,
+          documentType: contract.tenant.documentType,
+          documentNumber: contract.tenant.documentNumber,
+          user: { email: contract.tenant.user.email },
+        },
+        listing: {
+          property: {
+            address: contract.listing.property.address,
+            cadastralNumber: contract.listing.property.cadastralNumber,
+          },
+        },
+      });
+      documentUrl = await StorageService.uploadContractPdf(contract.id, pdfBuffer);
+    } catch (error) {
+      log.error(
+        { error, contractId },
+        'Failed to generate contract PDF — continuing without document'
+      );
+    }
+
     const updatedContract = await prisma.leaseContract.update({
       where: { id: contractId },
       data: {
         status: 'PENDING_SIGNATURES',
+        ...(documentUrl ? { documentUrl } : {}),
       },
       include: {
         listing: {
@@ -302,6 +376,7 @@ export class ContractService {
         contractId: contract.id,
         type: 'CONTRACT_SENT',
         triggeredBy: ownerProfileId,
+        data: documentUrl ? { documentUrl } : undefined,
       },
     });
 

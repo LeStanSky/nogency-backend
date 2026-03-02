@@ -50,6 +50,9 @@ lerna-debug.log*
 temp/
 tmp/
 
+# Generated test PDFs
+scripts/*.pdf
+
 # Package manager lock files (keep package-lock.json, ignore others)
 pnpm-lock.yaml
 yarn.lock

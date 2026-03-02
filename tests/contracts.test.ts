@@ -432,6 +432,51 @@ describe('Contract API', () => {
 
       expect(response.statusCode).toBe(400);
     });
+
+    it('should save leaseType SEASONAL correctly', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/contracts',
+        headers: { Authorization: `Bearer ${ownerToken}` },
+        payload: {
+          applicationId,
+          startDate: '2026-02-01',
+          endDate: '2027-01-31',
+          monthlyRent: 1200,
+          depositAmount: 2400,
+          depositMonths: 2,
+          paymentDueDay: 1,
+          utilitiesResponsibility: 'TENANT',
+          leaseType: 'SEASONAL',
+        },
+      });
+
+      expect(response.statusCode).toBe(201);
+      const body = response.json();
+      expect(body.leaseType).toBe('SEASONAL');
+    });
+
+    it('should default leaseType to RESIDENTIAL when not provided', async () => {
+      const response = await app.inject({
+        method: 'POST',
+        url: '/api/v1/contracts',
+        headers: { Authorization: `Bearer ${ownerToken}` },
+        payload: {
+          applicationId,
+          startDate: '2026-02-01',
+          endDate: '2027-01-31',
+          monthlyRent: 1200,
+          depositAmount: 2400,
+          depositMonths: 2,
+          paymentDueDay: 1,
+          utilitiesResponsibility: 'TENANT',
+        },
+      });
+
+      expect(response.statusCode).toBe(201);
+      const body = response.json();
+      expect(body.leaseType).toBe('RESIDENTIAL');
+    });
   });
 
   describe('GET /api/v1/contracts', () => {
@@ -879,6 +924,131 @@ describe('Contract API', () => {
       });
 
       expect(response.statusCode).toBe(400);
+    });
+  });
+
+  describe('GET /api/v1/contracts/:id/document', () => {
+    let contractId: string;
+
+    beforeEach(async () => {
+      const contractResponse = await app.inject({
+        method: 'POST',
+        url: '/api/v1/contracts',
+        headers: { Authorization: `Bearer ${ownerToken}` },
+        payload: {
+          applicationId,
+          startDate: '2026-02-01',
+          endDate: '2027-01-31',
+          monthlyRent: 1200,
+          depositAmount: 2400,
+          depositMonths: 2,
+          paymentDueDay: 1,
+          utilitiesResponsibility: 'TENANT',
+          leaseType: 'RESIDENTIAL',
+        },
+      });
+
+      if (contractResponse.statusCode !== 201) {
+        throw new Error(`Failed to create contract: ${contractResponse.body}`);
+      }
+
+      const contractBody = JSON.parse(contractResponse.body);
+      contractId = contractBody.id;
+    });
+
+    it('should return 400 when document not yet generated (DRAFT contract)', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: `/api/v1/contracts/${contractId}/document`,
+        headers: { Authorization: `Bearer ${ownerToken}` },
+      });
+
+      expect(response.statusCode).toBe(400);
+      expect(response.json().error).toContain('not been generated');
+    });
+
+    it('should return 404 for non-existent contract', async () => {
+      const response = await app.inject({
+        method: 'GET',
+        url: '/api/v1/contracts/00000000-0000-0000-0000-000000000000/document',
+        headers: { Authorization: `Bearer ${ownerToken}` },
+      });
+
+      expect(response.statusCode).toBe(404);
+    });
+
+    it('should return document URL when generated', async () => {
+      await prisma.leaseContract.update({
+        where: { id: contractId },
+        data: { documentUrl: 'https://example.com/test-contract.pdf' },
+      });
+
+      const response = await app.inject({
+        method: 'GET',
+        url: `/api/v1/contracts/${contractId}/document`,
+        headers: { Authorization: `Bearer ${ownerToken}` },
+      });
+
+      expect(response.statusCode).toBe(200);
+      const body = response.json();
+      expect(body.documentUrl).toBe('https://example.com/test-contract.pdf');
+      expect(body.contractNumber).toBeDefined();
+    });
+
+    it('should be accessible by the tenant party', async () => {
+      await prisma.leaseContract.update({
+        where: { id: contractId },
+        data: { documentUrl: 'https://example.com/test-contract.pdf' },
+      });
+
+      const response = await app.inject({
+        method: 'GET',
+        url: `/api/v1/contracts/${contractId}/document`,
+        headers: { Authorization: `Bearer ${tenantToken}` },
+      });
+
+      expect(response.statusCode).toBe(200);
+      expect(response.json().documentUrl).toBeDefined();
+    });
+
+    it('should deny access to a third party', async () => {
+      await prisma.leaseContract.update({
+        where: { id: contractId },
+        data: { documentUrl: 'https://example.com/test-contract.pdf' },
+      });
+
+      const timestamp = Date.now();
+      const thirdPartyRegisterResponse = await app.inject({
+        method: 'POST',
+        url: '/api/v1/auth/register',
+        payload: {
+          email: `third-party-${timestamp}@test.com`,
+          password: 'SecurePass123!',
+          phone: `+3465555${timestamp.toString().slice(-4)}`,
+          role: 'TENANT',
+        },
+      });
+      const thirdPartyToken = JSON.parse(thirdPartyRegisterResponse.body).token;
+
+      await app.inject({
+        method: 'POST',
+        url: '/api/v1/profiles/tenant',
+        headers: { authorization: `Bearer ${thirdPartyToken}` },
+        payload: {
+          firstName: 'Third',
+          lastName: 'Party',
+          documentType: 'DNI',
+          documentNumber: '22222222E',
+        },
+      });
+
+      const response = await app.inject({
+        method: 'GET',
+        url: `/api/v1/contracts/${contractId}/document`,
+        headers: { Authorization: `Bearer ${thirdPartyToken}` },
+      });
+
+      expect(response.statusCode).toBe(403);
     });
   });
 });

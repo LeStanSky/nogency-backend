@@ -56,20 +56,44 @@ describe('Listing CRUD API', () => {
   });
 
   beforeEach(async () => {
-    // Clean up database
-    await prisma.listing.deleteMany({});
-    await prisma.property.deleteMany({});
-    await prisma.tenantProfile.deleteMany({});
-    await prisma.ownerProfile.deleteMany({});
-    await prisma.userRole.deleteMany({});
-    await prisma.user.deleteMany({});
+    // Clean up database (comprehensive order)
+    await prisma.payment.deleteMany();
+    await prisma.depositRecord.deleteMany();
+    await prisma.commissionRecord.deleteMany();
+    await prisma.keyHandover.deleteMany();
+    await prisma.leaseEvent.deleteMany();
+    await prisma.leaseContract.deleteMany();
+    await prisma.tenantScoring.deleteMany();
+    await prisma.applicationDocument.deleteMany();
+    await prisma.application.deleteMany();
+    await prisma.viewingSlot.deleteMany();
+    await prisma.listing.deleteMany();
+    await prisma.propertyPhoto.deleteMany();
+    await prisma.propertyDocument.deleteMany();
+    await prisma.property.deleteMany();
+    await prisma.document.deleteMany();
+    await prisma.tenantProfile.deleteMany();
+    await prisma.ownerProfile.deleteMany();
+    await prisma.userRole.deleteMany();
+    await prisma.user.deleteMany();
+
+    // Use unique email with timestamp to avoid conflicts across test runs
+    const timestamp = Date.now();
 
     // Create owner user
     const registerResponse = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/register',
-      payload: testOwner,
+      payload: {
+        ...testOwner,
+        email: `owner-listing-${timestamp}@test.com`,
+        phone: `+3461${timestamp.toString().slice(-7)}`,
+      },
     });
+
+    if (registerResponse.statusCode !== 201) {
+      throw new Error(`Failed to register owner: ${registerResponse.body}`);
+    }
 
     const registerBody = JSON.parse(registerResponse.body);
     ownerToken = registerBody.token;

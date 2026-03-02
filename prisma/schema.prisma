@@ -588,6 +588,7 @@ model LeaseContract {
   paymentDueDay             Int                   @map("payment_due_day")
   utilitiesResponsibility   UtilitiesResponsibility @map("utilities_responsibility")
   sublettingAllowed         Boolean               @default(false) @map("subletting_allowed")
+  leaseType                 LeaseType             @default(RESIDENTIAL) @map("lease_type")
   status                    ContractStatus        @default(DRAFT)
   docusignEnvelopeId        String?               @map("docusign_envelope_id")
   ownerSignedAt             DateTime?             @map("owner_signed_at")
@@ -627,6 +628,11 @@ enum ContractStatus {
   ACTIVE
   TERMINATED
   EXPIRED
+}
+
+enum LeaseType {
+  RESIDENTIAL
+  SEASONAL
 }
 
 model LeaseEvent {

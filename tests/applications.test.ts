@@ -79,23 +79,44 @@ describe('Application API', () => {
   });
 
   beforeEach(async () => {
-    // Clean up database
-    await prisma.tenantScoring.deleteMany({});
-    await prisma.applicationDocument.deleteMany({});
-    await prisma.application.deleteMany({});
-    await prisma.listing.deleteMany({});
-    await prisma.property.deleteMany({});
-    await prisma.tenantProfile.deleteMany({});
-    await prisma.ownerProfile.deleteMany({});
-    await prisma.userRole.deleteMany({});
-    await prisma.user.deleteMany({});
+    // Clean up database (comprehensive order)
+    await prisma.payment.deleteMany();
+    await prisma.depositRecord.deleteMany();
+    await prisma.commissionRecord.deleteMany();
+    await prisma.keyHandover.deleteMany();
+    await prisma.leaseEvent.deleteMany();
+    await prisma.leaseContract.deleteMany();
+    await prisma.tenantScoring.deleteMany();
+    await prisma.applicationDocument.deleteMany();
+    await prisma.application.deleteMany();
+    await prisma.viewingSlot.deleteMany();
+    await prisma.listing.deleteMany();
+    await prisma.propertyPhoto.deleteMany();
+    await prisma.propertyDocument.deleteMany();
+    await prisma.property.deleteMany();
+    await prisma.document.deleteMany();
+    await prisma.tenantProfile.deleteMany();
+    await prisma.ownerProfile.deleteMany();
+    await prisma.userRole.deleteMany();
+    await prisma.user.deleteMany();
+
+    // Use unique emails with timestamp to avoid conflicts across test runs
+    const timestamp = Date.now();
 
     // Create owner user
     const ownerRegisterResponse = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/register',
-      payload: testOwner,
+      payload: {
+        ...testOwner,
+        email: `owner-app-${timestamp}@test.com`,
+        phone: `+3461${timestamp.toString().slice(-7)}`,
+      },
     });
+
+    if (ownerRegisterResponse.statusCode !== 201) {
+      throw new Error(`Failed to register owner: ${ownerRegisterResponse.body}`);
+    }
 
     const ownerRegisterBody = JSON.parse(ownerRegisterResponse.body);
     ownerToken = ownerRegisterBody.token;
@@ -153,8 +174,16 @@ describe('Application API', () => {
     const tenantRegisterResponse = await app.inject({
       method: 'POST',
       url: '/api/v1/auth/register',
-      payload: testTenant,
+      payload: {
+        ...testTenant,
+        email: `tenant-app-${timestamp}@test.com`,
+        phone: `+3462${timestamp.toString().slice(-7)}`,
+      },
     });
+
+    if (tenantRegisterResponse.statusCode !== 201) {
+      throw new Error(`Failed to register tenant: ${tenantRegisterResponse.body}`);
+    }
 
     const tenantRegisterBody = JSON.parse(tenantRegisterResponse.body);
     tenantToken = tenantRegisterBody.token;

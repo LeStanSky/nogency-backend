@@ -2,6 +2,8 @@ import { z } from 'zod';
 
 export const utilitiesResponsibilityEnum = z.enum(['OWNER', 'TENANT', 'SHARED']);
 
+export const leaseTypeEnum = z.enum(['RESIDENTIAL', 'SEASONAL']);
+
 export const contractStatusEnum = z.enum([
   'DRAFT',
   'PENDING_SIGNATURES',
@@ -22,6 +24,7 @@ export const createContractSchema = z
     paymentDueDay: z.number().int().min(1).max(28),
     utilitiesResponsibility: utilitiesResponsibilityEnum,
     sublettingAllowed: z.boolean().optional().default(false),
+    leaseType: leaseTypeEnum.optional().default('RESIDENTIAL'),
   })
   .refine((data) => data.endDate > data.startDate, {
     message: 'End date must be after start date',
@@ -51,6 +54,7 @@ export const contractQuerySchema = z.object({
   limit: z.coerce.number().int().min(1).max(50).default(10),
 });
 
+export type LeaseTypeValue = z.infer<typeof leaseTypeEnum>;
 export type CreateContractInput = z.infer<typeof createContractSchema>;
 export type UpdateContractInput = z.infer<typeof updateContractSchema>;
 export type TerminateContractInput = z.infer<typeof terminateContractSchema>;
