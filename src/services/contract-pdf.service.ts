@@ -657,7 +657,7 @@ export class ContractPdfService {
       doc,
       'NOVENA',
       'Obligaciones del Arrendatario',
-      "Tenant's Obligations",
+      `Tenant's Obligations`,
       `El arrendatario se obliga a: (i) pagar la renta en el plazo convenido; (ii) no ceder ni subarrendar total ni parcialmente el inmueble sin consentimiento escrito del arrendador; (iii) no almacenar materiales explosivos, inflamables o nocivos; (iv) cumplir la normativa de la comunidad de propietarios; (v) no tener mascotas sin autorización escrita previa del arrendador; (vi) no realizar perforaciones en alicatados de baños o cocinas. El incumplimiento de estas obligaciones podrá dar lugar a la resolución del contrato.`,
       `The tenant undertakes to: (i) pay the rent by the agreed date; (ii) not assign or sublet the property, in whole or in part, without the landlord's written consent; (iii) not store explosive, flammable or hazardous materials; (iv) comply with the homeowners' community rules; (v) not keep pets without the landlord's prior written authorisation; (vi) not drill into bathroom or kitchen tiling. Breach of these obligations may result in termination of the contract.`
     );
@@ -836,7 +836,7 @@ export class ContractPdfService {
       doc,
       'OCTAVA',
       'Obligaciones del Arrendatario',
-      "Tenant's Obligations",
+      `Tenant's Obligations`,
       `El arrendatario se obliga a: (i) pagar la renta puntualmente; (ii) no ceder ni subarrendar el inmueble sin consentimiento escrito del arrendador; (iii) no almacenar materiales peligrosos; (iv) cumplir la normativa de la comunidad de propietarios; (v) no tener mascotas sin autorización escrita previa del arrendador. El incumplimiento faculta al arrendador a resolver el contrato.`,
       `The tenant undertakes to: (i) pay rent punctually; (ii) not assign or sublet the property without the landlord's written consent; (iii) not store hazardous materials; (iv) comply with the homeowners' community rules; (v) not keep pets without the landlord's prior written authorisation. Breach entitles the landlord to terminate the contract.`
     );
