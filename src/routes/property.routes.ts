@@ -21,7 +21,7 @@ export default async function propertyRoutes(app: FastifyInstance) {
         properties: {
           address: {
             type: 'object',
-            required: ['street', 'city', 'postalCode'],
+            required: ['street'],
             properties: {
               street: { type: 'string', description: 'Street name' },
               number: { type: 'string', description: 'Street number' },
