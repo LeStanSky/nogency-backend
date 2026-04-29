@@ -7,6 +7,12 @@ build/
 *.tsbuildinfo
 *.map
 
+# Compiled JS/TS output in source directories
+tests/*.js
+tests/*.d.ts
+scripts/*.js
+scripts/*.d.ts
+
 # Environment files
 .env
 .env.*
@@ -36,14 +42,16 @@ pnpm-debug.log*
 lerna-debug.log*
 
 # Prisma
-prisma/migrations/
-!prisma/migrations/.gitkeep
 # Prisma generates client in node_modules/.prisma (covered by node_modules/)
+# Note: Migrations should be committed to version control for production use
 
 # Misc
 .cache/
 temp/
 tmp/
+
+# Generated test PDFs
+scripts/*.pdf
 
 # Package manager lock files (keep package-lock.json, ignore others)
 pnpm-lock.yaml
@@ -73,3 +81,4 @@ ehthumbs.db
 Thumbs.db
 Desktop.ini
 $RECYCLE.BIN/
+Sublime

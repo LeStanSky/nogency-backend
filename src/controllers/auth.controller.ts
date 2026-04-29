@@ -1,7 +1,24 @@
 import { FastifyRequest, FastifyReply } from 'fastify';
 import { AuthService } from '../services/auth.service.js';
-import { registerSchema, loginSchema } from '../schemas/auth.schema.js';
+import {
+  registerSchema,
+  loginSchema,
+  verifyEmailSchema,
+  resendVerificationSchema,
+  requestPasswordResetSchema,
+  resetPasswordSchema,
+} from '../schemas/auth.schema.js';
+import { sendOtpSchema, verifyOtpSchema } from '../schemas/otp.schema.js';
+import { OtpService } from '../services/otp.service.js';
 import { ZodError } from 'zod';
+import {
+  ValidationError,
+  ConflictError,
+  UnauthorizedError,
+  NotFoundError,
+  BadRequestError,
+  ServiceUnavailableError,
+} from '../utils/errors.js';
 
 export class AuthController {
   /**
@@ -19,24 +36,18 @@ export class AuthController {
       return reply.code(201).send(result);
     } catch (error) {
       if (error instanceof ZodError) {
-        return reply.code(400).send({
-          error: 'Validation error',
-          details: error.errors,
+        throw new ValidationError('Validation error', {
+          fields: error.errors.map((e) => `${e.path.join('.')}: ${e.message}`),
         });
       }
 
       if (error instanceof Error) {
         if (error.message === 'Email already exists') {
-          return reply.code(409).send({
-            error: 'Email already exists',
-          });
+          throw new ConflictError('Email already exists');
         }
       }
 
-      request.log.error(error);
-      return reply.code(500).send({
-        error: 'Internal server error',
-      });
+      throw error;
     }
   }
 
@@ -55,24 +66,18 @@ export class AuthController {
       return reply.code(200).send(result);
     } catch (error) {
       if (error instanceof ZodError) {
-        return reply.code(400).send({
-          error: 'Validation error',
-          details: error.errors,
+        throw new ValidationError('Validation error', {
+          fields: error.errors.map((e) => `${e.path.join('.')}: ${e.message}`),
         });
       }
 
       if (error instanceof Error) {
         if (error.message === 'Invalid credentials') {
-          return reply.code(401).send({
-            error: 'Invalid credentials',
-          });
+          throw new UnauthorizedError('Invalid credentials');
         }
       }
 
-      request.log.error(error);
-      return reply.code(500).send({
-        error: 'Internal server error',
-      });
+      throw error;
     }
   }
 
@@ -86,9 +91,7 @@ export class AuthController {
       const userId = request.userId;
 
       if (!userId) {
-        return reply.code(401).send({
-          error: 'Unauthorized',
-        });
+        throw new UnauthorizedError();
       }
 
       // Get user data
@@ -98,16 +101,178 @@ export class AuthController {
     } catch (error) {
       if (error instanceof Error) {
         if (error.message === 'User not found') {
-          return reply.code(404).send({
-            error: 'User not found',
-          });
+          throw new NotFoundError('User not found');
         }
       }
 
-      request.log.error(error);
-      return reply.code(500).send({
-        error: 'Internal server error',
-      });
+      throw error;
+    }
+  }
+
+  /**
+   * Verify email with token
+   * POST /api/v1/auth/verify-email
+   */
+  static async verifyEmail(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const data = verifyEmailSchema.parse(request.body);
+      const result = await AuthService.verifyEmail(data.token);
+      return reply.code(200).send(result);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        throw new ValidationError('Validation error', {
+          fields: error.errors.map((e) => `${e.path.join('.')}: ${e.message}`),
+        });
+      }
+
+      if (error instanceof Error) {
+        if (error.message.includes('Invalid') || error.message.includes('expired')) {
+          throw new BadRequestError(error.message);
+        }
+      }
+
+      throw error;
+    }
+  }
+
+  /**
+   * Resend verification email
+   * POST /api/v1/auth/resend-verification
+   */
+  static async resendVerification(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const data = resendVerificationSchema.parse(request.body);
+      const result = await AuthService.resendVerificationEmail(data.email);
+      return reply.code(200).send(result);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        throw new ValidationError('Validation error', {
+          fields: error.errors.map((e) => `${e.path.join('.')}: ${e.message}`),
+        });
+      }
+
+      if (error instanceof Error) {
+        if (error.message.includes('already verified')) {
+          throw new BadRequestError(error.message);
+        }
+      }
+
+      throw error;
+    }
+  }
+
+  /**
+   * Request password reset
+   * POST /api/v1/auth/request-password-reset
+   */
+  static async requestPasswordReset(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const data = requestPasswordResetSchema.parse(request.body);
+      const result = await AuthService.requestPasswordReset(data.email);
+      return reply.code(200).send(result);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        throw new ValidationError('Validation error', {
+          fields: error.errors.map((e) => `${e.path.join('.')}: ${e.message}`),
+        });
+      }
+
+      throw error;
+    }
+  }
+
+  /**
+   * Reset password with token
+   * POST /api/v1/auth/reset-password
+   */
+  static async resetPassword(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const data = resetPasswordSchema.parse(request.body);
+      const result = await AuthService.resetPassword(data.token, data.password);
+      return reply.code(200).send(result);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        throw new ValidationError('Validation error', {
+          fields: error.errors.map((e) => `${e.path.join('.')}: ${e.message}`),
+        });
+      }
+
+      if (error instanceof Error) {
+        if (error.message.includes('Invalid') || error.message.includes('expired')) {
+          throw new BadRequestError(error.message);
+        }
+      }
+
+      throw error;
+    }
+  }
+
+  /**
+   * Send OTP to phone number
+   * POST /api/v1/auth/otp/send
+   */
+  static async sendOtp(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const data = sendOtpSchema.parse(request.body);
+      await OtpService.sendOtp(data.phone);
+      return reply.code(200).send({ message: 'OTP sent successfully' });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        throw new ValidationError('Validation error', {
+          fields: error.errors.map((e) => `${e.path.join('.')}: ${e.message}`),
+        });
+      }
+
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+
+      throw new ServiceUnavailableError('Failed to send OTP. Please try again later.');
+    }
+  }
+
+  /**
+   * Verify OTP and login/register user
+   * POST /api/v1/auth/otp/verify
+   */
+  static async verifyOtp(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const data = verifyOtpSchema.parse(request.body);
+
+      // Verify OTP with Supabase
+      await OtpService.verifyOtp(data.phone, data.code);
+
+      // Find or create user in our database
+      const result = await AuthService.findOrCreateByPhone(data.phone, data.email, data.role);
+
+      return reply.code(200).send(result);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        throw new ValidationError('Validation error', {
+          fields: error.errors.map((e) => `${e.path.join('.')}: ${e.message}`),
+        });
+      }
+
+      if (error instanceof ConflictError || error instanceof UnauthorizedError) {
+        throw error;
+      }
+
+      if (error instanceof Error) {
+        // Prisma unique constraint violation (email already taken)
+        if (
+          error.message.includes('Unique constraint') ||
+          error.message.includes('already exists')
+        ) {
+          throw new ConflictError('Email already in use');
+        }
+
+        // OTP verification errors from OtpService (not Prisma errors)
+        if (!error.message.includes('prisma') && !error.message.includes('invocation')) {
+          throw new UnauthorizedError('Invalid or expired OTP code');
+        }
+      }
+
+      throw error;
     }
   }
 }

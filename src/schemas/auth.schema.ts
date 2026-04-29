@@ -26,6 +26,41 @@ export const loginSchema = z.object({
 
 export type LoginInput = z.infer<typeof loginSchema>;
 
+// Email Verification Schema
+export const verifyEmailSchema = z.object({
+  token: z.string().min(1, 'Token is required'),
+});
+
+export type VerifyEmailInput = z.infer<typeof verifyEmailSchema>;
+
+// Resend Verification Schema
+export const resendVerificationSchema = z.object({
+  email: z.string().email('Invalid email address'),
+});
+
+export type ResendVerificationInput = z.infer<typeof resendVerificationSchema>;
+
+// Request Password Reset Schema
+export const requestPasswordResetSchema = z.object({
+  email: z.string().email('Invalid email address'),
+});
+
+export type RequestPasswordResetInput = z.infer<typeof requestPasswordResetSchema>;
+
+// Reset Password Schema
+export const resetPasswordSchema = z.object({
+  token: z.string().min(1, 'Token is required'),
+  password: z
+    .string()
+    .min(8, 'Password must be at least 8 characters')
+    .regex(
+      /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
+      'Password must contain uppercase, lowercase, and number'
+    ),
+});
+
+export type ResetPasswordInput = z.infer<typeof resetPasswordSchema>;
+
 // Response types
 export interface AuthResponse {
   user: {

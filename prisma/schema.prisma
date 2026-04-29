@@ -16,19 +16,24 @@ datasource db {
 // ============================================================================
 
 model User {
-  id                 String    @id @default(uuid())
-  email              String    @unique
-  phone              String?
-  passwordHash       String    @map("password_hash")
-  isEmailVerified    Boolean   @default(false) @map("is_email_verified")
-  isPhoneVerified    Boolean   @default(false) @map("is_phone_verified")
-  preferredLanguage  String?   @map("preferred_language")
-  createdAt          DateTime  @default(now()) @map("created_at")
-  updatedAt          DateTime  @updatedAt @map("updated_at")
+  id                       String    @id @default(uuid())
+  email                    String    @unique
+  phone                    String?   @unique
+  passwordHash             String?   @map("password_hash")
+  isEmailVerified          Boolean   @default(false) @map("is_email_verified")
+  isPhoneVerified          Boolean   @default(false) @map("is_phone_verified")
+  preferredLanguage        String?   @map("preferred_language")
+  emailVerificationToken   String?   @map("email_verification_token")
+  emailVerificationExpires DateTime? @map("email_verification_expires")
+  passwordResetToken       String?   @map("password_reset_token")
+  passwordResetExpires     DateTime? @map("password_reset_expires")
+  createdAt                DateTime  @default(now()) @map("created_at")
+  updatedAt                DateTime  @updatedAt @map("updated_at")
 
   roles              UserRole[]
   ownerProfile       OwnerProfile?
   tenantProfile      TenantProfile?
+  documents          Document[]
   notifications      Notification[]
   sentMessages       Message[]
   conversationParticipants ConversationParticipant[]
@@ -57,6 +62,31 @@ enum Role {
 }
 
 // ============================================================================
+// DOCUMENT MODEL (User Documents)
+// ============================================================================
+
+model Document {
+  id               String   @id @default(uuid())
+  userId           String   @map("user_id")
+  type             String   // "ID", "NIE_TIE", "BANK_STATEMENT", "EMPLOYMENT_CONTRACT", "PAYSLIP", "OTHER"
+  fileName         String   @map("file_name")
+  fileUrl          String   @map("file_url")
+  mimeType         String   @map("mime_type")
+  fileSize         Int      @map("file_size")
+  status           String   @default("PENDING") // "PENDING", "VERIFIED", "REJECTED"
+  verificationData Json?    @map("verification_data") // AI-extracted data from document
+  verifiedAt       DateTime? @map("verified_at")
+  createdAt        DateTime @default(now()) @map("created_at")
+  updatedAt        DateTime @updatedAt @map("updated_at")
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@map("documents")
+}
+
+// ============================================================================
 // OWNER PROFILE
 // ============================================================================
 
@@ -65,8 +95,8 @@ model OwnerProfile {
   userId           String        @unique @map("user_id")
   firstName        String        @map("first_name")
   lastName         String        @map("last_name")
-  documentType     DocumentType  @map("document_type")
-  documentNumber   String        @map("document_number")
+  documentType     DocumentType? @map("document_type")
+  documentNumber   String?       @map("document_number")
   isCompany        Boolean       @default(false) @map("is_company")
   companyName      String?       @map("company_name")
   taxId            String?       @map("tax_id")
@@ -119,6 +149,16 @@ model TenantProfile {
   rentalDurationMonths  Int?             @map("rental_duration_months")
   applicationSource     ApplicationSource? @map("application_source")
   isEmailVerified       Boolean          @default(false) @map("is_email_verified")
+
+  // Plaid Integration Fields
+  plaidAccessToken          String?   @map("plaid_access_token")
+  plaidItemId               String?   @map("plaid_item_id")
+  plaidInstitutionName      String?   @map("plaid_institution_name")
+  plaidVerifiedAt           DateTime? @map("plaid_verified_at")
+  incomeVerifiedViaPlaid    Boolean   @default(false) @map("income_verified_via_plaid")
+  plaidVerifiedMonthlyIncome Decimal? @map("plaid_verified_monthly_income") @db.Decimal(10, 2)
+  plaidData                 Json?     @map("plaid_data")
+
   createdAt             DateTime         @default(now()) @map("created_at")
   updatedAt             DateTime         @updatedAt @map("updated_at")
 
@@ -183,6 +223,42 @@ model Property {
   // Amenities (stored as JSON array)
   amenities             Json?
 
+  // Additional address field (flat string for display/search)
+  addressRaw            String?             @map("address_raw")
+
+  // Building details (onboarding)
+  hasElevator           Boolean?            @map("has_elevator")
+  outdoorFeatures       String[]            @map("outdoor_features")
+  overallCondition      String?             @map("overall_condition")
+  buildingYear          Int?                @map("building_year")
+  energyClass           String?             @map("energy_class")
+
+  // Appliances & facilities (onboarding)
+  kitchenAppliances     String[]            @map("kitchen_appliances")
+  washingFacilities     String[]            @map("washing_facilities")
+  bathroomFeatures      String[]            @map("bathroom_features")
+  hotWaterSystems       String[]            @map("hot_water_systems")
+  airConditioningTypes  String[]            @map("air_conditioning_types")
+  otherAmenities        String[]            @map("other_amenities")
+  parkingOptions        String[]            @map("parking_options")
+
+  // Utilities included in rent
+  electricityIncluded   Boolean?            @map("electricity_included")
+  waterIncluded         Boolean?            @map("water_included")
+  gasIncluded           Boolean?            @map("gas_included")
+
+  // Tenant rules
+  petsAllowed           String?             @map("pets_allowed")
+  kidsAllowed           String?             @map("kids_allowed")
+  smokingAllowed        String?             @map("smoking_allowed")
+  maxTenants            Int?                @map("max_tenants")
+
+  // Move-in/out preferences
+  moveInOption          String?             @map("move_in_option")
+  moveInDate            DateTime?           @map("move_in_date") @db.Date
+  moveOutOption         String?             @map("move_out_option")
+  moveOutDate           DateTime?           @map("move_out_date") @db.Date
+
   // Verification
   isVerified            Boolean             @default(false) @map("is_verified")
   verificationStatus    VerificationStatus  @default(PENDING) @map("verification_status")
@@ -208,6 +284,10 @@ enum PropertyType {
   HOUSE
   STUDIO
   ROOM
+  PENTHOUSE
+  DUPLEX
+  LOFT
+  OTHER
 }
 
 enum RepairQuality {
@@ -226,6 +306,7 @@ enum HeatingType {
   GAS
   ELECTRIC
   CENTRAL
+  INDIVIDUAL
   NONE
 }
 
@@ -450,17 +531,18 @@ enum ApplicationDocumentType {
 }
 
 model TenantScoring {
-  id                   String      @id @default(uuid())
-  applicationId        String      @unique @map("application_id")
-  totalScore           Decimal     @map("total_score") @db.Decimal(5, 2)
-  incomeScore          Decimal     @map("income_score") @db.Decimal(5, 2)
-  employmentScore      Decimal     @map("employment_score") @db.Decimal(5, 2)
-  rentalHistoryScore   Decimal     @map("rental_history_score") @db.Decimal(5, 2)
-  verificationScore    Decimal     @map("verification_score") @db.Decimal(5, 2)
-  criteriaMatchScore   Decimal     @map("criteria_match_score") @db.Decimal(5, 2)
-  riskLevel            RiskLevel   @map("risk_level")
-  calculatedAt         DateTime    @map("calculated_at")
-  notes                String?     @db.Text
+  id                      String      @id @default(uuid())
+  applicationId           String      @unique @map("application_id")
+  totalScore              Decimal     @map("total_score") @db.Decimal(5, 2)
+  incomeScore             Decimal     @map("income_score") @db.Decimal(5, 2)
+  employmentScore         Decimal     @map("employment_score") @db.Decimal(5, 2)
+  rentalHistoryScore      Decimal     @map("rental_history_score") @db.Decimal(5, 2)
+  verificationScore       Decimal     @map("verification_score") @db.Decimal(5, 2)
+  criteriaMatchScore      Decimal     @map("criteria_match_score") @db.Decimal(5, 2)
+  financialStabilityScore Decimal?    @map("financial_stability_score") @db.Decimal(5, 2)
+  riskLevel               RiskLevel   @map("risk_level")
+  calculatedAt            DateTime    @map("calculated_at")
+  notes                   String?     @db.Text
 
   application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
 
@@ -547,6 +629,7 @@ model LeaseContract {
   paymentDueDay             Int                   @map("payment_due_day")
   utilitiesResponsibility   UtilitiesResponsibility @map("utilities_responsibility")
   sublettingAllowed         Boolean               @default(false) @map("subletting_allowed")
+  leaseType                 LeaseType             @default(RESIDENTIAL) @map("lease_type")
   status                    ContractStatus        @default(DRAFT)
   docusignEnvelopeId        String?               @map("docusign_envelope_id")
   ownerSignedAt             DateTime?             @map("owner_signed_at")
@@ -586,6 +669,11 @@ enum ContractStatus {
   ACTIVE
   TERMINATED
   EXPIRED
+}
+
+enum LeaseType {
+  RESIDENTIAL
+  SEASONAL
 }
 
 model LeaseEvent {
