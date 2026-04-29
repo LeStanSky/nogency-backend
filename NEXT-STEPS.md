@@ -1,135 +1,135 @@
-# Дальнейшие шаги разработки (TDD подход)
+# Development Roadmap (TDD Approach)
 
-## ✅ Текущий статус проекта (Updated: 2026-01-16)
+## ✅ Current Project Status (Updated: 2026-01-16)
 
-### Инфраструктура
+### Infrastructure
 
 - [x] Node.js + TypeScript ✅
 - [x] Fastify framework ✅
 - [x] Prisma ORM ✅
-- [x] Vitest для TDD ✅
-- [x] Git репозиторий ✅
+- [x] Vitest for TDD ✅
+- [x] Git repository ✅
 - [x] ESLint (Google Style) + Prettier ✅
 - [x] Git hooks (Husky + lint-staged) ✅
-- [x] Структура проекта ✅
+- [x] Project structure ✅
 - [x] Health check endpoint ✅
-- [x] Стандартизированная обработка ошибок ✅
+- [x] Standardized error handling ✅
 
-### База данных
+### Database
 
-- [x] **Supabase проект создан и подключен** ✅
-- [x] **Полная Prisma схема реализована (26 сущностей)** ✅
-- [x] Все таблицы созданы в PostgreSQL ✅
-- [x] Prisma Client сгенерирован ✅
-- [x] Prisma Studio доступен (http://localhost:5556) ✅
+- [x] **Supabase project created and connected** ✅
+- [x] **Full Prisma schema implemented (26 entities)** ✅
+- [x] All tables created in PostgreSQL ✅
+- [x] Prisma Client generated ✅
+- [x] Prisma Studio available (http://localhost:5556) ✅
 
 ### API Endpoints
 
-- [x] **Authentication API полностью реализован** ✅
-  - [x] POST /api/v1/auth/register (регистрация + email verification)
-  - [x] POST /api/v1/auth/login (вход с JWT)
-  - [x] GET /api/v1/auth/me (текущий пользователь, protected)
-  - [x] POST /api/v1/auth/verify-email (верификация email)
-  - [x] POST /api/v1/auth/resend-verification (повторная отправка)
-  - [x] POST /api/v1/auth/request-password-reset (запрос сброса пароля)
-  - [x] POST /api/v1/auth/reset-password (сброс пароля)
-  - [x] Auth middleware для защиты роутов
-  - [x] Email Service с Resend интеграцией
-  - [x] 28 тестов покрывают все сценарии (10 auth + 18 email)
-  - [x] Coverage: >93% для auth модулов
+- [x] **Authentication API fully implemented** ✅
+  - [x] POST /api/v1/auth/register (registration + email verification)
+  - [x] POST /api/v1/auth/login (login with JWT)
+  - [x] GET /api/v1/auth/me (current user, protected)
+  - [x] POST /api/v1/auth/verify-email (email verification)
+  - [x] POST /api/v1/auth/resend-verification (resend verification)
+  - [x] POST /api/v1/auth/request-password-reset (request password reset)
+  - [x] POST /api/v1/auth/reset-password (reset password)
+  - [x] Auth middleware to protect routes
+  - [x] Email Service with Resend integration
+  - [x] 28 tests covering all scenarios (10 auth + 18 email)
+  - [x] Coverage: >93% for auth modules
 
-- [x] **Profile Management API полностью реализован** ✅
-  - [x] POST /api/v1/profiles/owner (создание профиля владельца)
-  - [x] POST /api/v1/profiles/tenant (создание профиля арендатора)
-  - [x] GET /api/v1/profiles/me (получение профиля)
-  - [x] PATCH /api/v1/profiles/me (обновление профиля)
-  - [x] 18 тестов покрывают все сценарии
+- [x] **Profile Management API fully implemented** ✅
+  - [x] POST /api/v1/profiles/owner (create owner profile)
+  - [x] POST /api/v1/profiles/tenant (create tenant profile)
+  - [x] GET /api/v1/profiles/me (get profile)
+  - [x] PATCH /api/v1/profiles/me (update profile)
+  - [x] 18 tests covering all scenarios
   - [x] Coverage: 84.42% overall (exceeds 80% target)
 
-- [x] **Document Upload API полностью реализован** ✅
-  - [x] POST /api/v1/documents (загрузка документа в Supabase Storage)
-  - [x] GET /api/v1/documents (список документов пользователя)
-  - [x] GET /api/v1/documents/:id (получение документа по ID)
-  - [x] DELETE /api/v1/documents/:id (удаление документа)
-  - [x] 16 тестов покрывают все сценарии
-  - [x] Supabase Storage buckets настроены
+- [x] **Document Upload API fully implemented** ✅
+  - [x] POST /api/v1/documents (upload document to Supabase Storage)
+  - [x] GET /api/v1/documents (list user documents)
+  - [x] GET /api/v1/documents/:id (get document by ID)
+  - [x] DELETE /api/v1/documents/:id (delete document)
+  - [x] 16 tests covering all scenarios
+  - [x] Supabase Storage buckets configured
   - [x] Coverage: 78.96% overall
 
-- [x] **AI Document Verification полностью реализован** ✅
-  - [x] POST /api/v1/documents/:id/verify (AI верификация документа)
-  - [x] AIService с Claude 3.5 Sonnet Vision API
-  - [x] Извлечение данных из DNI/NIE/TIE (имя, номер, ДР, национальность)
-  - [x] Извлечение данных из Payslips (работодатель, доход брутто/нетто)
-  - [x] Извлечение данных из Bank Statements (баланс, месячный доход)
-  - [x] verificationData JSON поле добавлено в Document model
-  - [x] 8 тестов с mocked AI responses
+- [x] **AI Document Verification fully implemented** ✅
+  - [x] POST /api/v1/documents/:id/verify (AI document verification)
+  - [x] AIService with Claude 3.5 Sonnet Vision API
+  - [x] Data extraction from DNI/NIE/TIE (name, number, DOB, nationality)
+  - [x] Data extraction from Payslips (employer, gross/net income)
+  - [x] Data extraction from Bank Statements (balance, monthly income)
+  - [x] verificationData JSON field added to Document model
+  - [x] 8 tests with mocked AI responses
   - [x] Coverage: 74.7% overall
 
-- [x] **Property CRUD API полностью реализован** ✅
-  - [x] POST /api/v1/properties (создание недвижимости)
-  - [x] GET /api/v1/properties (список недвижимости владельца)
-  - [x] GET /api/v1/properties/:id (получение деталей недвижимости)
-  - [x] PATCH /api/v1/properties/:id (обновление недвижимости)
-  - [x] DELETE /api/v1/properties/:id (удаление недвижимости)
-  - [x] POST /api/v1/properties/:id/photos (добавление фото)
-  - [x] DELETE /api/v1/properties/:id/photos/:photoId (удаление фото)
-  - [x] Zod validation для всех полей Property
-  - [x] Проверка владельца (только owner может CRUD)
-  - [x] 25 тестов покрывают все сценарии
+- [x] **Property CRUD API fully implemented** ✅
+  - [x] POST /api/v1/properties (create property)
+  - [x] GET /api/v1/properties (list owner's properties)
+  - [x] GET /api/v1/properties/:id (get property details)
+  - [x] PATCH /api/v1/properties/:id (update property)
+  - [x] DELETE /api/v1/properties/:id (delete property)
+  - [x] POST /api/v1/properties/:id/photos (add photos)
+  - [x] DELETE /api/v1/properties/:id/photos/:photoId (delete photo)
+  - [x] Zod validation for all Property fields
+  - [x] Ownership check (only owner can CRUD)
+  - [x] 25 tests covering all scenarios
   - [x] Coverage: 77.17% overall
 
-- [x] **Listing CRUD API полностью реализован** ✅
-  - [x] POST /api/v1/listings (создание листинга)
-  - [x] GET /api/v1/listings (список листингов владельца)
-  - [x] GET /api/v1/listings/public (публичные активные листинги)
-  - [x] GET /api/v1/listings/:id (получение деталей листинга)
-  - [x] PATCH /api/v1/listings/:id (обновление листинга)
-  - [x] DELETE /api/v1/listings/:id (удаление листинга)
-  - [x] POST /api/v1/listings/:id/publish (публикация листинга)
-  - [x] POST /api/v1/listings/:id/pause (пауза листинга)
-  - [x] Zod validation для всех полей Listing
-  - [x] Проверка владельца (только owner может CRUD)
-  - [x] 20 тестов покрывают все сценарии
+- [x] **Listing CRUD API fully implemented** ✅
+  - [x] POST /api/v1/listings (create listing)
+  - [x] GET /api/v1/listings (list owner's listings)
+  - [x] GET /api/v1/listings/public (public active listings)
+  - [x] GET /api/v1/listings/:id (get listing details)
+  - [x] PATCH /api/v1/listings/:id (update listing)
+  - [x] DELETE /api/v1/listings/:id (delete listing)
+  - [x] POST /api/v1/listings/:id/publish (publish listing)
+  - [x] POST /api/v1/listings/:id/pause (pause listing)
+  - [x] Zod validation for all Listing fields
+  - [x] Ownership check (only owner can CRUD)
+  - [x] 20 tests covering all scenarios
   - [x] Coverage: 85.78% overall
 
-- [x] **Application & AI Scoring API полностью реализован** ✅
-  - [x] POST /api/v1/applications (подача заявки tenant)
-  - [x] GET /api/v1/applications (список заявок с фильтрацией по роли)
-  - [x] GET /api/v1/applications/:id (получение деталей заявки)
-  - [x] PATCH /api/v1/applications/:id/status (обновление статуса owner)
-  - [x] POST /api/v1/applications/:id/withdraw (отзыв заявки tenant)
-  - [x] POST /api/v1/applications/:id/score (AI scoring owner)
-  - [x] ScoringService с 5 метриками (income, employment, rental history, verification, criteria match)
-  - [x] Risk Level (LOW/MEDIUM/HIGH) автоматически определяется
-  - [x] Генерация рекомендаций для владельца
-  - [x] Проверка дубликатов заявок
-  - [x] Проверка статуса листинга (только ACTIVE)
-  - [x] 31 тест покрывает все сценарии
+- [x] **Application & AI Scoring API fully implemented** ✅
+  - [x] POST /api/v1/applications (tenant submits application)
+  - [x] GET /api/v1/applications (list applications filtered by role)
+  - [x] GET /api/v1/applications/:id (get application details)
+  - [x] PATCH /api/v1/applications/:id/status (owner updates status)
+  - [x] POST /api/v1/applications/:id/withdraw (tenant withdraws application)
+  - [x] POST /api/v1/applications/:id/score (owner triggers AI scoring)
+  - [x] ScoringService with 5 metrics (income, employment, rental history, verification, criteria match)
+  - [x] Risk Level (LOW/MEDIUM/HIGH) automatically determined
+  - [x] Recommendation generation for the owner
+  - [x] Duplicate application check
+  - [x] Listing status check (ACTIVE only)
+  - [x] 31 tests covering all scenarios
   - [x] Coverage: 86.09% overall
 
-- [x] **Contract API полностью реализован** ✅
-  - [x] POST /api/v1/contracts (создание контракта из approved application)
-  - [x] GET /api/v1/contracts (список контрактов owner/tenant)
-  - [x] GET /api/v1/contracts/:id (получение деталей контракта)
-  - [x] POST /api/v1/contracts/:id/send-for-signing (отправка на подпись)
-  - [x] POST /api/v1/contracts/:id/sign (подпись контракта owner/tenant)
-  - [x] POST /api/v1/contracts/:id/terminate (расторжение контракта)
+- [x] **Contract API fully implemented** ✅
+  - [x] POST /api/v1/contracts (create contract from approved application)
+  - [x] GET /api/v1/contracts (list contracts for owner/tenant)
+  - [x] GET /api/v1/contracts/:id (get contract details)
+  - [x] POST /api/v1/contracts/:id/send-for-signing (send for signing)
+  - [x] POST /api/v1/contracts/:id/sign (sign contract as owner/tenant)
+  - [x] POST /api/v1/contracts/:id/terminate (terminate contract)
   - [x] LeaseEvent tracking (CONTRACT_CREATED, CONTRACT_SENT, SIGNED_OWNER, SIGNED_TENANT, ACTIVE, TERMINATED)
   - [x] Contract workflow: DRAFT → PENDING_SIGNATURES → ACTIVE → TERMINATED
-  - [x] Listing status автоматически обновляется (ACTIVE → RENTED)
-  - [x] 24 теста покрывают все сценарии
+  - [x] Listing status automatically updated (ACTIVE → RENTED)
+  - [x] 24 tests covering all scenarios
 
-- [x] **Payment API (Stripe Integration) полностью реализован** ✅
-  - [x] POST /api/v1/payments/create-intent (создание Stripe payment intent)
-  - [x] GET /api/v1/payments (список платежей tenant/owner)
-  - [x] GET /api/v1/payments/:id (получение платежа по ID)
-  - [x] POST /api/v1/payments/webhook (обработка Stripe webhooks)
-  - [x] GET /api/v1/contracts/:id/payments (платежи по контракту)
-  - [x] Поддержка типов платежей: DEPOSIT, MONTHLY_RENT, UTILITIES, LATE_FEE, DAMAGE_DEPOSIT
-  - [x] Webhook обрабатывает payment_intent.succeeded / payment_intent.payment_failed
-  - [x] 21 тест покрывает все сценарии
+- [x] **Payment API (Stripe Integration) fully implemented** ✅
+  - [x] POST /api/v1/payments/create-intent (create Stripe payment intent)
+  - [x] GET /api/v1/payments (list payments for tenant/owner)
+  - [x] GET /api/v1/payments/:id (get payment by ID)
+  - [x] POST /api/v1/payments/webhook (handle Stripe webhooks)
+  - [x] GET /api/v1/contracts/:id/payments (payments per contract)
+  - [x] Payment type support: DEPOSIT, MONTHLY_RENT, UTILITIES, LATE_FEE, DAMAGE_DEPOSIT
+  - [x] Webhook handles payment_intent.succeeded / payment_intent.payment_failed
+  - [x] 21 tests covering all scenarios
 
-### Dependencies установлены
+### Dependencies installed
 
 - [x] bcryptjs (password hashing)
 - [x] jsonwebtoken (JWT tokens)
@@ -140,51 +140,51 @@
 
 ## 📊 Database Schema Overview
 
-**26 моделей успешно созданы:**
+**26 models successfully created:**
 
 ### Core User Models
 
 - User (auth credentials)
-- UserRole (многие роли на пользователя)
-- OwnerProfile (владельцы)
-- TenantProfile (арендаторы)
+- UserRole (multiple roles per user)
+- OwnerProfile (owners)
+- TenantProfile (tenants)
 
 ### Property Models
 
-- Property (недвижимость)
-- PropertyPhoto (фотографии)
-- PropertyDocument (документы: NOTA_SIMPLE, ESCRITURA, IBI, etc.)
-- PropertyValuation (оценка стоимости)
+- Property (real estate)
+- PropertyPhoto (photos)
+- PropertyDocument (documents: NOTA_SIMPLE, ESCRITURA, IBI, etc.)
+- PropertyValuation (valuation)
 
 ### Listing Models
 
-- Listing (объявления)
-- ViewingSlot (слоты для показов)
+- Listing (listings)
+- ViewingSlot (viewing slots)
 
 ### Application Models
 
-- Application (заявки арендаторов)
-- ApplicationDocument (документы заявок)
-- TenantScoring (AI-скоринг арендаторов)
+- Application (tenant applications)
+- ApplicationDocument (application documents)
+- TenantScoring (AI tenant scoring)
 
 ### Meeting & Contract Models
 
-- Meeting (встречи, показы, подписание)
-- LeaseContract (договоры аренды)
-- LeaseEvent (история контракта)
-- DepositRecord (депозиты)
-- CommissionRecord (комиссии)
-- KeyHandover (передача ключей)
+- Meeting (meetings, viewings, signings)
+- LeaseContract (lease contracts)
+- LeaseEvent (contract history)
+- DepositRecord (deposits)
+- CommissionRecord (commissions)
+- KeyHandover (key handover)
 
 ### Payment Models
 
-- Payment (все типы платежей)
+- Payment (all payment types)
 
 ### Communication Models
 
-- Conversation (чаты)
-- ConversationParticipant (участники)
-- Message (сообщения)
+- Conversation (chats)
+- ConversationParticipant (participants)
+- Message (messages)
 
 ### Notification Model
 
@@ -192,15 +192,15 @@
 
 ---
 
-## 🎯 Следующие шаги разработки
+## 🎯 Development Roadmap
 
 ### Week 1-2: Owner/Tenant Profiles + Document Upload
 
 #### Day 3-4: Profile Management API
 
-**Endpoints для реализации:**
+**Endpoints to implement:**
 
-1. **POST /api/v1/profiles/owner** - Создать профиль владельца
+1. **POST /api/v1/profiles/owner** - Create owner profile
 
    ```typescript
    // TDD: tests/profiles.test.ts
@@ -209,11 +209,11 @@
    // Controller: src/controllers/profile.controller.ts
    ```
 
-2. **POST /api/v1/profiles/tenant** - Создать профиль арендатора
+2. **POST /api/v1/profiles/tenant** - Create tenant profile
 
-3. **GET /api/v1/profiles/me** - Получить свой профиль (owner или tenant)
+3. **GET /api/v1/profiles/me** - Get own profile (owner or tenant)
 
-4. **PATCH /api/v1/profiles/me** - Обновить профиль
+4. **PATCH /api/v1/profiles/me** - Update profile
 
 **TDD Workflow:**
 
@@ -231,11 +231,11 @@ npm run test:coverage              # Check coverage >80%
 
 **Acceptance Criteria:**
 
-- [x] Тесты написаны ДО реализации ✅
-- [x] POST /profiles/owner создает OwnerProfile + UserRole ✅
-- [x] POST /profiles/tenant создает TenantProfile + UserRole ✅
-- [x] GET /profiles/me возвращает правильный профиль ✅
-- [x] Validation с Zod для всех полей ✅
+- [x] Tests written BEFORE implementation ✅
+- [x] POST /profiles/owner creates OwnerProfile + UserRole ✅
+- [x] POST /profiles/tenant creates TenantProfile + UserRole ✅
+- [x] GET /profiles/me returns the correct profile ✅
+- [x] Validation with Zod for all fields ✅
 - [x] Coverage > 80% (84.42%) ✅
 - [x] Git commit: "feat: implement profile management API" ✅
 
@@ -243,14 +243,14 @@ npm run test:coverage              # Check coverage >80%
 
 #### Day 5-7: Document Upload API + Supabase Storage
 
-**Настроить Supabase Storage:**
+**Configure Supabase Storage:**
 
-1. В Supabase Dashboard → Storage
-2. Создать bucket "documents" (private)
-3. Создать bucket "property-photos" (public)
-4. Настроить RLS policies
+1. In Supabase Dashboard → Storage
+2. Create bucket "documents" (private)
+3. Create bucket "property-photos" (public)
+4. Configure RLS policies
 
-**Endpoints для реализации:**
+**Endpoints to implement:**
 
 1. **POST /api/v1/documents** - Upload document
 
@@ -263,7 +263,7 @@ npm run test:coverage              # Check coverage >80%
 2. **GET /api/v1/documents** - List user documents
 
    ```typescript
-   // Row-level security: только свои документы
+   // Row-level security: own documents only
    ```
 
 3. **GET /api/v1/documents/:id** - Get document details
@@ -307,11 +307,11 @@ npm test -- documents.test.ts --run
 
 **Acceptance Criteria:**
 
-- [x] Supabase Storage buckets созданы ✅
-- [x] POST /documents загружает файл в Supabase ✅
-- [x] GET /documents возвращает только документы пользователя ✅
-- [x] DELETE /documents удаляет из Storage + DB ✅
-- [x] Validation типов файлов (PDF, JPG, PNG) ✅
+- [x] Supabase Storage buckets created ✅
+- [x] POST /documents uploads file to Supabase ✅
+- [x] GET /documents returns only the user's documents ✅
+- [x] DELETE /documents removes from Storage + DB ✅
+- [x] File type validation (PDF, JPG, PNG) ✅
 - [x] Max file size 10MB ✅
 - [x] Coverage > 78% (Overall: 78.96%) ✅
 - [x] Git commit: "feat: implement document upload with Supabase Storage" ✅
@@ -364,7 +364,7 @@ export class AIService {
 }
 ```
 
-**Что извлекать из документов:**
+**What to extract from documents:**
 
 - **DNI/NIE/TIE:**
   - Full Name
@@ -399,11 +399,11 @@ npm test -- ai.test.ts --run
 
 **Acceptance Criteria:**
 
-- [x] POST /documents/:id/verify вызывает Claude API ✅
-- [x] Извлекает structured data из DNI/NIE ✅
-- [x] Сохраняет verificationData в DB ✅
-- [x] Обновляет status документа (PENDING → VERIFIED) ✅
-- [x] Mock тесты для AI responses ✅
+- [x] POST /documents/:id/verify calls the Claude API ✅
+- [x] Extracts structured data from DNI/NIE ✅
+- [x] Persists verificationData in DB ✅
+- [x] Updates document status (PENDING → VERIFIED) ✅
+- [x] Mock tests for AI responses ✅
 - [x] Coverage > 74% ✅
 - [x] Git commit: "feat: implement AI document verification with Claude" ✅
 
@@ -437,12 +437,12 @@ npm test -- ai.test.ts --run
 
 **Acceptance Criteria:**
 
-- [x] Property CRUD полностью реализован ✅
-- [x] Listing CRUD полностью реализован ✅
-- [x] Owner может создать property с photos ✅
+- [x] Property CRUD fully implemented ✅
+- [x] Listing CRUD fully implemented ✅
+- [x] Owner can create property with photos ✅
 - [x] Property → Listing workflow ✅
-- [x] Публичный endpoint для активных listings ✅
-- [x] Coverage > 85% (текущий: 85.78%) ✅
+- [x] Public endpoint for active listings ✅
+- [x] Coverage > 85% (current: 85.78%) ✅
 - [x] Git commit: "feat: implement property CRUD API" ✅
 - [x] Git commit: "feat: implement listing CRUD API" ✅
 
@@ -452,13 +452,13 @@ npm test -- ai.test.ts --run
 
 #### Application API
 
-**Файлы для создания:**
+**Files to create:**
 
 ```bash
-# TDD: сначала тесты
+# TDD: tests first
 touch tests/applications.test.ts
 
-# Затем реализация
+# Then implementation
 touch src/schemas/application.schema.ts
 touch src/services/application.service.ts
 touch src/services/scoring.service.ts
@@ -473,10 +473,10 @@ touch src/routes/application.routes.ts
    ```typescript
    // Request body:
    {
-     listingId: string;        // UUID листинга
-     message?: string;         // Сообщение для владельца
-     moveInDate: Date;         // Желаемая дата въезда
-     leaseDuration?: number;   // Срок аренды в месяцах
+     listingId: string;        // Listing UUID
+     message?: string;         // Message to the owner
+     moveInDate: Date;         // Desired move-in date
+     leaseDuration?: number;   // Lease duration in months
    }
 
    // Response:
@@ -495,12 +495,12 @@ touch src/routes/application.routes.ts
 2. **GET /api/v1/applications** - List applications (filtered by role)
 
    ```typescript
-   // Для TENANT: возвращает свои заявки
-   // Для OWNER: возвращает заявки на свои листинги
+   // For TENANT: returns own applications
+   // For OWNER: returns applications for own listings
 
    // Query params:
    ?status=PENDING|REVIEWING|APPROVED|REJECTED|WITHDRAWN
-   ?listingId=uuid  // Фильтр по листингу (только для owner)
+   ?listingId=uuid  // Filter by listing (owner only)
 
    // Response:
    {
@@ -514,7 +514,7 @@ touch src/routes/application.routes.ts
 3. **GET /api/v1/applications/:id** - Get application details
 
    ```typescript
-   // Response включает:
+   // Response includes:
    {
      id: string;
      listing: {
@@ -551,24 +551,24 @@ touch src/routes/application.routes.ts
 5. **POST /api/v1/applications/:id/withdraw** - Withdraw application (Tenant only)
 
    ```typescript
-   // Tenant может отозвать свою заявку
-   // Меняет status на WITHDRAWN
+   // Tenant can withdraw their own application
+   // Changes status to WITHDRAWN
    ```
 
 6. **POST /api/v1/applications/:id/documents** - Upload application document
 
    ```typescript
    // Multipart upload
-   // Привязывает документ к заявке (ApplicationDocument)
-   // Типы: PAYSLIP, BANK_STATEMENT, EMPLOYMENT_CONTRACT, REFERENCE_LETTER, etc.
+   // Attaches document to the application (ApplicationDocument)
+   // Types: PAYSLIP, BANK_STATEMENT, EMPLOYMENT_CONTRACT, REFERENCE_LETTER, etc.
    ```
 
 7. **POST /api/v1/applications/:id/score** - Calculate AI score (Owner only)
 
    ```typescript
-   // Триггерит AI scoring для заявки
-   // Анализирует все загруженные документы
-   // Создает TenantScoring запись
+   // Triggers AI scoring for the application
+   // Analyzes all uploaded documents
+   // Creates a TenantScoring record
    ```
 
 ---
@@ -596,7 +596,7 @@ interface ScoringResult {
 
 export class ScoringService {
   /**
-   * Рассчитывает AI scoring для заявки
+   * Calculates AI scoring for an application
    */
   static async calculateScore(applicationId: string): Promise<ScoringResult> {
     const application = await prisma.application.findUnique({
@@ -712,64 +712,64 @@ export class ScoringService {
   }
 
   /**
-   * Income Score: соотношение дохода к аренде
-   * Идеально: доход >= 3x аренды = 100 баллов
+   * Income Score: ratio of income to rent
+   * Ideal: income >= 3x rent = 100 points
    */
   private static calculateIncomeScore(monthlyIncome: number | null, monthlyRent: number): number {
     if (!monthlyIncome || monthlyIncome <= 0) return 0;
 
     const ratio = monthlyIncome / monthlyRent;
 
-    if (ratio >= 4) return 100; // Отлично
-    if (ratio >= 3) return 90; // Очень хорошо
-    if (ratio >= 2.5) return 75; // Хорошо
-    if (ratio >= 2) return 60; // Приемлемо
-    if (ratio >= 1.5) return 40; // Рискованно
-    return 20; // Высокий риск
+    if (ratio >= 4) return 100; // Excellent
+    if (ratio >= 3) return 90; // Very good
+    if (ratio >= 2.5) return 75; // Good
+    if (ratio >= 2) return 60; // Acceptable
+    if (ratio >= 1.5) return 40; // Risky
+    return 20; // High risk
   }
 
   /**
-   * Employment Score: стабильность занятости
+   * Employment Score: employment stability
    */
   private static async calculateEmploymentScore(tenant: any, documents: any[]): Promise<number> {
-    let score = 50; // Базовый балл
+    let score = 50; // Baseline score
 
-    // +20 если есть подтвержденный контракт
+    // +20 if there is a verified contract
     const hasEmploymentContract = documents.some(
       (d) => d.document?.type === 'EMPLOYMENT_CONTRACT' && d.document?.status === 'VERIFIED'
     );
     if (hasEmploymentContract) score += 20;
 
-    // +15 если есть payslip
+    // +15 if there is a payslip
     const hasPayslip = documents.some(
       (d) => d.document?.type === 'PAYSLIP' && d.document?.status === 'VERIFIED'
     );
     if (hasPayslip) score += 15;
 
-    // +15 если указана профессия
+    // +15 if occupation is specified
     if (tenant.occupation) score += 15;
 
     return Math.min(score, 100);
   }
 
   /**
-   * Rental History Score: история аренды
+   * Rental History Score: rental history
    */
   private static calculateRentalHistoryScore(tenant: any): number {
-    let score = 70; // Базовый балл для новых арендаторов
+    let score = 70; // Baseline score for new tenants
 
-    // +30 если есть рекомендательное письмо от предыдущего арендодателя
+    // +30 if there is a reference letter from a previous landlord
     if (tenant.hasReferences) score += 30;
 
-    // Дополнительная логика может включать:
-    // - Количество лет аренды
-    // - Отзывы от предыдущих арендодателей
+    // Additional logic may include:
+    // - Number of years renting
+    // - Feedback from previous landlords
 
     return Math.min(score, 100);
   }
 
   /**
-   * Verification Score: уровень верификации документов
+   * Verification Score: document verification level
    */
   private static calculateVerificationScore(tenantDocs: any[], applicationDocs: any[]): number {
     const allDocs = [...tenantDocs, ...applicationDocs.map((d) => d.document)];
@@ -779,10 +779,10 @@ export class ScoringService {
     const verifiedCount = allDocs.filter((d) => d?.status === 'VERIFIED').length;
     const totalCount = allDocs.length;
 
-    // Базовый процент верификации
+    // Base verification rate
     const verificationRate = (verifiedCount / totalCount) * 100;
 
-    // Бонус за DNI/NIE верификацию
+    // Bonus for DNI/NIE verification
     const hasVerifiedId = allDocs.some(
       (d) => ['DNI', 'NIE', 'TIE', 'PASSPORT'].includes(d?.type) && d?.status === 'VERIFIED'
     );
@@ -792,35 +792,35 @@ export class ScoringService {
   }
 
   /**
-   * Criteria Match Score: соответствие критериям владельца
+   * Criteria Match Score: match against owner's criteria
    */
   private static calculateCriteriaMatchScore(tenant: any, listing: any): number {
-    // Если у листинга нет критериев, даем полный балл
+    // If the listing has no criteria, give a full score
     if (!listing.preferredTenantCriteria) return 100;
 
     let score = 100;
     const criteria = listing.preferredTenantCriteria;
 
-    // Проверка минимального дохода
+    // Minimum income check
     if (criteria.minIncome && tenant.monthlyIncome) {
       if (tenant.monthlyIncome < criteria.minIncome) {
         score -= 30;
       }
     }
 
-    // Проверка профессии (если указана)
+    // Occupation check (if specified)
     if (criteria.preferredOccupations?.length > 0) {
       if (!criteria.preferredOccupations.includes(tenant.occupation)) {
         score -= 10;
       }
     }
 
-    // Проверка наличия домашних животных
+    // Pets check
     if (criteria.noPets && tenant.hasPets) {
       score -= 20;
     }
 
-    // Проверка курения
+    // Smoking check
     if (criteria.noSmoking && tenant.isSmoker) {
       score -= 20;
     }
@@ -829,7 +829,7 @@ export class ScoringService {
   }
 
   /**
-   * Определяет уровень риска
+   * Determines the risk level
    */
   private static calculateRiskLevel(totalScore: number): RiskLevel {
     if (totalScore >= 75) return 'LOW';
@@ -838,7 +838,7 @@ export class ScoringService {
   }
 
   /**
-   * Генерирует рекомендации для владельца
+   * Generates recommendations for the owner
    */
   private static generateRecommendations(scores: {
     incomeScore: number;
@@ -851,33 +851,30 @@ export class ScoringService {
 
     if (scores.incomeScore < 60) {
       recommendations.push(
-        'Доход арендатора ниже рекомендуемого уровня (3x аренды). ' +
-          'Рассмотрите возможность запроса дополнительного депозита или поручителя.'
+        'Tenant income is below the recommended level (3x rent). ' +
+          'Consider requesting an additional deposit or a guarantor.'
       );
     }
 
     if (scores.employmentScore < 60) {
       recommendations.push(
-        'Недостаточно подтверждений занятости. ' +
-          'Запросите трудовой договор или справку с работы.'
+        'Insufficient employment evidence. ' +
+          'Request an employment contract or proof of employment.'
       );
     }
 
     if (scores.verificationScore < 50) {
       recommendations.push(
-        'Низкий уровень верификации документов. ' +
-          'Попросите арендатора загрузить и верифицировать документы.'
+        'Low document verification level. ' + 'Ask the tenant to upload and verify their documents.'
       );
     }
 
     if (scores.criteriaMatchScore < 70) {
-      recommendations.push('Арендатор не полностью соответствует указанным критериям.');
+      recommendations.push('Tenant does not fully match the specified criteria.');
     }
 
     if (recommendations.length === 0) {
-      recommendations.push(
-        'Арендатор соответствует всем критериям. Рекомендуется одобрение заявки.'
-      );
+      recommendations.push('Tenant meets all criteria. Application is recommended for approval.');
     }
 
     return recommendations;
@@ -949,8 +946,8 @@ describe('Application API', () => {
 
   beforeAll(async () => {
     app = await createApp();
-    // Setup: создать tenant, owner, property, listing
-    // Получить JWT tokens
+    // Setup: create tenant, owner, property, listing
+    // Obtain JWT tokens
   });
 
   afterAll(async () => {
@@ -1143,17 +1140,17 @@ describe('Application API', () => {
 
 **Acceptance Criteria:**
 
-- [x] Tenant может подать заявку на listing ✅
-- [x] Tenant не может подать повторную заявку на тот же listing ✅
-- [x] Owner видит все заявки на свои listings ✅
-- [x] Owner может изменить статус заявки (REVIEWING, APPROVED, REJECTED) ✅
-- [x] Rejection требует указания причины ✅
-- [x] Tenant может отозвать свою заявку (WITHDRAWN) ✅
-- [x] AI scoring рассчитывает 5 метрик ✅
-- [x] TenantScoring сохраняется в DB ✅
-- [x] Risk Level определяется (LOW/MEDIUM/HIGH) ✅
-- [x] Генерируются рекомендации для владельца ✅
-- [x] 31 тест покрывает все сценарии ✅
+- [x] Tenant can submit an application for a listing ✅
+- [x] Tenant cannot submit a duplicate application for the same listing ✅
+- [x] Owner sees all applications for their listings ✅
+- [x] Owner can change the application status (REVIEWING, APPROVED, REJECTED) ✅
+- [x] Rejection requires a reason ✅
+- [x] Tenant can withdraw their own application (WITHDRAWN) ✅
+- [x] AI scoring computes 5 metrics ✅
+- [x] TenantScoring is persisted in DB ✅
+- [x] Risk Level is determined (LOW/MEDIUM/HIGH) ✅
+- [x] Recommendations are generated for the owner ✅
+- [x] 31 tests cover all scenarios ✅
 - [x] Coverage: 86.09% ✅
 - [x] Git commit: "feat: implement tenant applications and AI scoring" ✅
 
@@ -1220,8 +1217,8 @@ export class PaymentService {
 
 **Contract API:**
 
-- [x] Contract создается из approved application ✅
-- [x] Owner и tenant могут подписать контракт ✅
+- [x] Contract is created from an approved application ✅
+- [x] Owner and tenant can sign the contract ✅
 - [x] POST /api/v1/contracts - Create contract from application ✅
 - [x] GET /api/v1/contracts - List contracts (owner/tenant) ✅
 - [x] GET /api/v1/contracts/:id - Get contract details ✅
@@ -1229,7 +1226,7 @@ export class PaymentService {
 - [x] POST /api/v1/contracts/:id/sign - Sign contract ✅
 - [x] POST /api/v1/contracts/:id/terminate - Terminate contract ✅
 - [x] Lease events tracked (created, sent, signed, active, terminated) ✅
-- [x] 24 теста покрывают все сценарии ✅
+- [x] 24 tests cover all scenarios ✅
 
 **Payment API (Stripe Integration):**
 
@@ -1238,23 +1235,23 @@ export class PaymentService {
 - [x] GET /api/v1/payments/:id - Get payment by ID ✅
 - [x] POST /api/v1/payments/webhook - Handle Stripe webhooks ✅
 - [x] GET /api/v1/contracts/:id/payments - List payments for contract ✅
-- [x] Stripe payment intent создается ✅
-- [x] Webhook обрабатывает успешные/failed платежи ✅
-- [x] Payment статусы обновляются ✅
-- [x] 21 тест покрывает все сценарии ✅
-- [ ] PDF generation для контракта (optional, future enhancement)
+- [x] Stripe payment intent is created ✅
+- [x] Webhook handles successful/failed payments ✅
+- [x] Payment statuses are updated ✅
+- [x] 21 tests cover all scenarios ✅
+- [ ] PDF generation for contracts (optional, future enhancement)
 
 ---
 
-### 📋 Рекомендации по улучшению проекта
+### 📋 Project Improvement Recommendations
 
-**⚠️ Примечание:** Приоритетность выполнения этих задач следует уточнить после завершения всех задач недель 5-6 (Contracts & Payments).
+**⚠️ Note:** Prioritization of these tasks should be revisited after all Week 5-6 tasks (Contracts & Payments) are complete.
 
 #### 1. API Documentation (OpenAPI/Swagger) ✅ COMPLETED
 
-**Цель:** Автоматическая генерация API документации для фронтенда
+**Goal:** Automatic generation of API documentation for the frontend
 
-**Реализация:**
+**Implementation:**
 
 ```bash
 npm install @fastify/swagger @fastify/swagger-ui
@@ -1279,33 +1276,33 @@ await app.register(swaggerUI, {
 });
 ```
 
-**⚠️ ВАЖНО: Dual Validation System (Zod + JSON Schema)**
+**⚠️ IMPORTANT: Dual Validation System (Zod + JSON Schema)**
 
-При добавлении Swagger schemas в routes НЕОБХОДИМО синхронизировать их с Zod schemas:
+When adding Swagger schemas to routes, you MUST synchronize them with the Zod schemas:
 
-1. **JSON Schema в routes** должна соответствовать **Zod schema** в `src/schemas/`
-2. **Всегда запускать тесты** до и после изменений: `npm test -- --run`
-3. **Response type для списков** должен быть `type: 'array'` с `items`
-4. **Multipart endpoints** (file uploads) НЕ должны иметь body JSON Schema
+1. **JSON Schema in routes** must match the **Zod schema** in `src/schemas/`
+2. **Always run tests** before and after changes: `npm test -- --run`
+3. **Response type for lists** must be `type: 'array'` with `items`
+4. **Multipart endpoints** (file uploads) MUST NOT have a body JSON Schema
 
-Подробнее см. раздел "Dual Validation System" в CLAUDE.md.
+See the "Dual Validation System" section in CLAUDE.md for details.
 
 **Acceptance Criteria:**
 
-- [x] Swagger UI доступен на `/docs` ✅
-- [x] Все endpoints задокументированы ✅
-- [x] Request/Response схемы описаны ✅
-- [x] JSON Schema синхронизированы с Zod schemas ✅
-- [x] Все 202 теста проходят ✅
-- [x] Примеры запросов добавлены
+- [x] Swagger UI available at `/docs` ✅
+- [x] All endpoints documented ✅
+- [x] Request/Response schemas described ✅
+- [x] JSON Schemas synchronized with Zod schemas ✅
+- [x] All 202 tests pass ✅
+- [x] Request examples added
 
 ---
 
 #### 2. Rate Limiting ✅ COMPLETED
 
-**Цель:** Защита API от злоупотреблений и DDoS атак
+**Goal:** Protect the API from abuse and DDoS attacks
 
-**Реализация:**
+**Implementation:**
 
 ```bash
 npm install @fastify/rate-limit@9
@@ -1344,20 +1341,20 @@ rateLimit: {
 
 **Acceptance Criteria:**
 
-- [x] Rate limiting настроен для всех endpoints ✅
-- [x] Разные лимиты для auth endpoints (более строгие - 10/min vs 100/min) ✅
-- [x] Rate limit headers в ответах (x-ratelimit-limit, remaining, reset, retry-after) ✅
-- [x] Тесты для rate limiting (5 tests in tests/rate-limit.test.ts) ✅
-- [x] Rate limiting отключен в test environment ✅
+- [x] Rate limiting configured for all endpoints ✅
+- [x] Different limits for auth endpoints (stricter - 10/min vs 100/min) ✅
+- [x] Rate limit headers in responses (x-ratelimit-limit, remaining, reset, retry-after) ✅
+- [x] Rate limiting tests (5 tests in tests/rate-limit.test.ts) ✅
+- [x] Rate limiting disabled in test environment ✅
 - [x] Configurable via environment variables ✅
 
 ---
 
-#### 3. Улучшенный Error Handling ✅ COMPLETED
+#### 3. Improved Error Handling ✅ COMPLETED
 
-**Цель:** Стандартизированные ошибки и лучший UX
+**Goal:** Standardized errors and improved UX
 
-**Реализация:**
+**Implementation:**
 
 ```typescript
 // src/utils/errors.ts
@@ -1381,9 +1378,9 @@ export class AppError extends Error {
   }
 }
 
-// Специализированные классы ошибок:
+// Specialized error classes:
 // - BadRequestError (400)
-// - ValidationError (400) - с details для полей
+// - ValidationError (400) - with details for fields
 // - UnauthorizedError (401)
 // - ForbiddenError (403)
 // - NotFoundError (404)
@@ -1394,7 +1391,7 @@ export class AppError extends Error {
 // - ServiceUnavailableError (503)
 ```
 
-**Error Schemas для Swagger:**
+**Error Schemas for Swagger:**
 
 ```typescript
 // src/schemas/error.schema.ts
@@ -1413,7 +1410,7 @@ export const errorResponseSchema = {
   required: ['error', 'statusCode'],
 };
 
-// Использование в роутах:
+// Usage in routes:
 response: {
   400: {
     description: 'Validation error',
@@ -1428,25 +1425,25 @@ response: {
 }
 ```
 
-**Примечание:** В проекте используется паттерн с явным указанием каждого статуса ошибки с `errorResponseSchema` для большей гибкости и явности. `commonErrorResponses` также определен, но не используется в текущей реализации.
+**Note:** The project uses a pattern of explicitly specifying each error status with `errorResponseSchema` for greater flexibility and clarity. `commonErrorResponses` is also defined but not used in the current implementation.
 
 **Acceptance Criteria:**
 
-- [x] Custom error classes созданы ✅
-- [x] Global error handler настроен в app.ts ✅
-- [x] Все ошибки в стандартном формате ✅
-- [x] Error schemas для Swagger документации ✅
-- [x] Все контроллеры используют стандартизированные ошибки ✅
-- [x] Все роуты включают error response schemas ✅
-- [x] Тесты для обработки ошибок добавлены ✅
+- [x] Custom error classes created ✅
+- [x] Global error handler configured in app.ts ✅
+- [x] All errors in standard format ✅
+- [x] Error schemas for Swagger documentation ✅
+- [x] All controllers use standardized errors ✅
+- [x] All routes include error response schemas ✅
+- [x] Error handling tests added ✅
 
 ---
 
-#### 4. Мониторинг и Логирование ✅ COMPLETED
+#### 4. Monitoring and Logging ✅ COMPLETED
 
-**Цель:** Отслеживание производительности и ошибок в production
+**Goal:** Track performance and errors in production
 
-**Реализация:**
+**Implementation:**
 
 **Structured Logging (Pino):**
 
@@ -1464,12 +1461,12 @@ serviceLoggers.payment.error({ error }, 'Payment failed');
 
 **Features:**
 
-- JSON-формат логов для production
-- Pretty printing для development
-- Автоматическая редакция sensitive данных (passwords, tokens, etc.)
-- Service-specific логгеры для каждого модуля
-- Request ID трейсинг
-- Performance logging для медленных операций
+- JSON log format for production
+- Pretty printing for development
+- Automatic redaction of sensitive data (passwords, tokens, etc.)
+- Service-specific loggers for each module
+- Request ID tracing
+- Performance logging for slow operations
 
 **Sentry Integration:**
 
@@ -1477,19 +1474,19 @@ serviceLoggers.payment.error({ error }, 'Payment failed');
 // src/utils/sentry.ts
 import { captureException, setUser } from './utils/sentry.js';
 
-// Автоматический capture 500 ошибок
-// Фильтрация 4xx ошибок (не баги)
-// User context для debugging
+// Automatic capture of 500 errors
+// 4xx errors filtered out (not bugs)
+// User context for debugging
 ```
 
 **Request/Response Logging:**
 
 ```typescript
-// Middleware автоматически логирует:
+// Middleware automatically logs:
 // - Request ID (x-request-id header)
 // - Method, URL, User ID
-// - Response time и status code
-// - Slow requests (>3s) как warnings
+// - Response time and status code
+// - Slow requests (>3s) as warnings
 ```
 
 **Environment Variables:**
@@ -1502,45 +1499,45 @@ LOG_PRETTY=false                       # Pretty print in development
 
 **Acceptance Criteria:**
 
-- [x] Error tracking настроен (Sentry) ✅
-- [x] Structured logging реализован (Pino) ✅
-- [x] Request ID трейсинг ✅
-- [x] Service loggers для каждого модуля ✅
+- [x] Error tracking configured (Sentry) ✅
+- [x] Structured logging implemented (Pino) ✅
+- [x] Request ID tracing ✅
+- [x] Service loggers for each module ✅
 - [x] Sensitive data redaction ✅
-- [x] Performance logging для медленных операций ✅
-- [x] Graceful shutdown с flush Sentry ✅
-- [ ] Alerts настроены для критических ошибок (в Sentry UI)
+- [x] Performance logging for slow operations ✅
+- [x] Graceful shutdown with Sentry flush ✅
+- [ ] Alerts configured for critical errors (in Sentry UI)
 
 ---
 
 #### 5. Email Notifications (Resend Integration) ✅ COMPLETED
 
-**Цель:** Отправка уведомлений пользователям
+**Goal:** Send notifications to users
 
-**Реализованные endpoints:**
+**Implemented endpoints:**
 
-1. **POST /api/v1/auth/verify-email** - Верификация email с токеном ✅
-2. **POST /api/v1/auth/resend-verification** - Повторная отправка верификации ✅
-3. **POST /api/v1/auth/request-password-reset** - Запрос сброса пароля ✅
-4. **POST /api/v1/auth/reset-password** - Сброс пароля с токеном ✅
+1. **POST /api/v1/auth/verify-email** - Verify email with token ✅
+2. **POST /api/v1/auth/resend-verification** - Resend verification ✅
+3. **POST /api/v1/auth/request-password-reset** - Request password reset ✅
+4. **POST /api/v1/auth/reset-password** - Reset password with token ✅
 
 **Acceptance Criteria:**
 
-- [x] Resend SDK интегрирован ✅
-- [x] Email templates созданы (verification, password reset, welcome, notifications) ✅
-- [x] Email верификация работает ✅
-- [x] Password reset через email ✅
-- [x] Тесты с mocked Resend API (18 tests) ✅
-- [x] Регистрация автоматически отправляет verification email ✅
-- [x] Prisma schema обновлена (emailVerificationToken, passwordResetToken) ✅
+- [x] Resend SDK integrated ✅
+- [x] Email templates created (verification, password reset, welcome, notifications) ✅
+- [x] Email verification works ✅
+- [x] Password reset via email ✅
+- [x] Tests with mocked Resend API (18 tests) ✅
+- [x] Registration automatically sends verification email ✅
+- [x] Prisma schema updated (emailVerificationToken, passwordResetToken) ✅
 
 ---
 
-#### 6. Health Checks для внешних сервисов ✅ COMPLETED
+#### 6. Health Checks for External Services ✅ COMPLETED
 
-**Цель:** Мониторинг доступности зависимостей
+**Goal:** Monitor dependency availability
 
-**Реализация:**
+**Implementation:**
 
 ```typescript
 // GET /health/detailed
@@ -1564,20 +1561,20 @@ LOG_PRETTY=false                       # Pretty print in development
 
 **Acceptance Criteria:**
 
-- [x] Health check для PostgreSQL ✅
-- [x] Health check для Supabase Storage ✅
-- [x] Health check для Anthropic API ✅
-- [x] Health check для Stripe API ✅
-- [x] Endpoint `/health/detailed` реализован ✅
-- [x] Endpoint `/health/ready` реализован (readiness probe) ✅
-- [x] Endpoint `/health/live` реализован (liveness probe) ✅
-- [x] 13 тестов покрывают все сценарии ✅
+- [x] Health check for PostgreSQL ✅
+- [x] Health check for Supabase Storage ✅
+- [x] Health check for Anthropic API ✅
+- [x] Health check for Stripe API ✅
+- [x] Endpoint `/health/detailed` implemented ✅
+- [x] Endpoint `/health/ready` implemented (readiness probe) ✅
+- [x] Endpoint `/health/live` implemented (liveness probe) ✅
+- [x] 13 tests cover all scenarios ✅
 
 ---
 
 #### 7. CI/CD Pipeline (GitHub Actions) ✅ COMPLETED
 
-**Цель:** Автоматизация тестирования и деплоя
+**Goal:** Automate testing and deployment
 
 **Workflow:**
 
@@ -1593,120 +1590,120 @@ LOG_PRETTY=false                       # Pretty print in development
 - Deploy to staging/production (optional)
 ```
 
-**Реализованные Jobs:**
+**Implemented Jobs:**
 
-1. **lint** - Проверка ESLint и Prettier
-2. **typecheck** - Проверка типов TypeScript
-3. **build** - Сборка проекта
-4. **security** - Проверка безопасности зависимостей (npm audit)
-5. **test** - Запуск тестов с coverage и проверкой thresholds
-6. **ci-success** - Финальная проверка успешности всех jobs
+1. **lint** - ESLint and Prettier checks
+2. **typecheck** - TypeScript type checking
+3. **build** - Project build
+4. **security** - Dependency security audit (npm audit)
+5. **test** - Run tests with coverage and threshold checks
+6. **ci-success** - Final success check across all jobs
 
 **Coverage Thresholds:**
 
-Настроены минимальные пороги в `vitest.config.ts`:
+Minimum thresholds configured in `vitest.config.ts`:
 
 - Lines: 80%
 - Functions: 80%
 - Branches: 80%
 - Statements: 80%
 
-CI будет падать, если coverage упадет ниже этих порогов.
+CI will fail if coverage drops below these thresholds.
 
 **Acceptance Criteria:**
 
-- [x] GitHub Actions workflow создан ✅
-- [x] Автоматические тесты на PR ✅
-- [x] Coverage проверка с thresholds ✅
+- [x] GitHub Actions workflow created ✅
+- [x] Automatic tests on PR ✅
+- [x] Coverage check with thresholds ✅
 - [x] TypeScript type checking ✅
 - [x] Security audit (npm audit) ✅
-- [x] Coverage комментарии в PR ✅
-- [ ] Автоматический деплой (опционально, не реализован)
+- [x] Coverage comments on PR ✅
+- [ ] Automatic deployment (optional, not implemented)
 
 ---
 
 #### 8. Database Migrations Best Practices
 
-**Цель:** Безопасные миграции в production
+**Goal:** Safe migrations in production
 
-**Рекомендации:**
+**Recommendations:**
 
-- [ ] Всегда использовать `prisma migrate` вместо `db push` в production
-- [ ] Backup базы перед миграциями
-- [ ] Тестировать миграции на staging
-- [ ] Rollback план для каждой миграции
+- [ ] Always use `prisma migrate` instead of `db push` in production
+- [ ] Back up the database before migrations
+- [ ] Test migrations on staging
+- [ ] Rollback plan for each migration
 
 ---
 
 #### 9. API Versioning Strategy
 
-**Цель:** Поддержка нескольких версий API
+**Goal:** Support multiple API versions
 
-**Реализация:**
+**Implementation:**
 
-- Текущая версия: `/api/v1/`
-- Будущие версии: `/api/v2/`
-- Deprecation policy для старых версий
+- Current version: `/api/v1/`
+- Future versions: `/api/v2/`
+- Deprecation policy for older versions
 
 ---
 
 #### 10. Performance Optimization
 
-**Цель:** Улучшение скорости ответов API
+**Goal:** Improve API response times
 
-**Оптимизации:**
+**Optimizations:**
 
-- [ ] Database query optimization (N+1 проблемы)
-- [ ] Caching для часто запрашиваемых данных (Redis)
-- [ ] Pagination для всех list endpoints
-- [ ] Database indexes проверены и оптимизированы
+- [ ] Database query optimization (N+1 issues)
+- [ ] Caching for frequently requested data (Redis)
+- [ ] Pagination for all list endpoints
+- [ ] Database indexes reviewed and optimized
 
 ---
 
-**Приоритетность выполнения будет определена после завершения Week 5-6 (Contracts & Payments).**
+**Prioritization will be determined after completing Week 5-6 (Contracts & Payments).**
 
 ---
 
 ### Week 7-8: Plaid Integration (Income & Identity Verification)
 
-**Цель:** Интеграция с Plaid для автоматизации верификации доходов и улучшения tenant scoring
+**Goal:** Integrate with Plaid to automate income verification and improve tenant scoring
 
 #### Plaid Setup & Income Verification
 
-**Установка:**
+**Installation:**
 
 ```bash
 npm install plaid
 ```
 
-**Endpoints для реализации:**
+**Endpoints to implement:**
 
 1. **POST /api/v1/plaid/link-token** - Create Plaid Link token
 
    ```typescript
-   // Frontend использует этот token для Plaid Link UI
-   // Позволяет пользователю подключить банковский счет
+   // Frontend uses this token for the Plaid Link UI
+   // Allows the user to connect a bank account
    ```
 
 2. **POST /api/v1/plaid/exchange-token** - Exchange public_token for access_token
 
    ```typescript
-   // После успешного подключения банка в Plaid Link
-   // Сохраняет access_token в DB для будущих запросов
+   // After a successful bank connection in Plaid Link
+   // Stores access_token in DB for future requests
    ```
 
 3. **GET /api/v1/plaid/income** - Get income verification report
 
    ```typescript
-   // Получает Bank Income report от Plaid
-   // Возвращает: net income, income sources, stability metrics
+   // Retrieves Bank Income report from Plaid
+   // Returns: net income, income sources, stability metrics
    ```
 
 4. **GET /api/v1/plaid/transactions** - Get user transactions
 
    ```typescript
-   // Получает историю транзакций за последние 12 месяцев
-   // Для анализа финансового поведения
+   // Retrieves the last 12 months of transaction history
+   // For analyzing financial behavior
    ```
 
 **Implementation:**
@@ -1718,7 +1715,7 @@ import { Configuration, PlaidApi, PlaidEnvironments } from 'plaid';
 export class PlaidService {
   private static client = new PlaidApi(
     new Configuration({
-      basePath: PlaidEnvironments.sandbox, // или production
+      basePath: PlaidEnvironments.sandbox, // or production
       baseOptions: {
         headers: {
           'PLAID-CLIENT-ID': config.plaid.clientId,
@@ -1733,7 +1730,7 @@ export class PlaidService {
       user: { client_user_id: userId },
       client_name: 'NoGency AI',
       products: ['auth', 'income', 'transactions'],
-      country_codes: ['US', 'ES', 'GB'], // Поддерживаемые страны
+      country_codes: ['US', 'ES', 'GB'], // Supported countries
       language: 'es',
     });
     return response.data.link_token;
@@ -1767,7 +1764,7 @@ export class PlaidService {
 **Database Schema Updates:**
 
 ```prisma
-// Добавить в TenantProfile:
+// Add to TenantProfile:
 model TenantProfile {
   // ... existing fields
   plaidAccessToken    String?  @map("plaid_access_token") // Encrypted!
@@ -1796,12 +1793,12 @@ export class ScoringService {
     // 1. Income Score - ENHANCED with Plaid
     let incomeScore = 0;
     if (application.tenant.plaidIncomeVerified) {
-      // Используем verified Plaid income (более надежно)
+      // Use verified Plaid income (more reliable)
       const plaidIncome = await PlaidService.getIncome(application.tenant.plaidAccessToken!);
       const monthlyIncome = plaidIncome.income.streams[0].monthly_income;
       incomeScore = this.calculateIncomeScore(monthlyIncome, application.listing.monthlyRent);
     } else {
-      // Fallback: используем данные из документов (Claude AI)
+      // Fallback: use data from documents (Claude AI)
       incomeScore = this.calculateIncomeScore(
         application.tenant.monthlyIncome,
         application.listing.monthlyRent
@@ -1854,10 +1851,10 @@ export class ScoringService {
 
   // NEW: Analyze financial stability from transactions
   static analyzeFinancialStability(transactions: any): number {
-    // 1. Income regularity (регулярность зарплаты)
-    // 2. Savings pattern (есть ли накопления?)
-    // 3. Overdrafts / NSF fees (овердрафты = bad)
-    // 4. Spending pattern (стабильность расходов)
+    // 1. Income regularity (paycheck regularity)
+    // 2. Savings pattern (are there savings?)
+    // 3. Overdrafts / NSF fees (overdrafts = bad)
+    // 4. Spending pattern (spending stability)
     // Return score 0-100
   }
 }
@@ -1865,69 +1862,69 @@ export class ScoringService {
 
 **Acceptance Criteria:**
 
-- [x] Plaid SDK установлен и настроен ✅
-- [x] POST /plaid/link-token создает Link token ✅
-- [x] POST /plaid/exchange-token обменивает токены ✅
-- [x] GET /plaid/income получает income report ✅
-- [x] GET /plaid/status получает статус подключения ✅
-- [x] DELETE /plaid/disconnect отключает Plaid ✅
-- [x] POST /plaid/webhook обрабатывает Plaid webhooks ✅
-- [x] TenantProfile хранит Plaid access_token (encrypted with AES-256-CBC) ✅
-- [x] ScoringService использует Plaid income для расчета ✅
-- [x] FinancialStabilityScore добавлен в TenantScoring ✅
-- [ ] Frontend Plaid Link компонент интегрирован (frontend task)
-- [x] Тесты покрывают Plaid integration (20 tests, mocked) ✅
+- [x] Plaid SDK installed and configured ✅
+- [x] POST /plaid/link-token creates a Link token ✅
+- [x] POST /plaid/exchange-token exchanges tokens ✅
+- [x] GET /plaid/income retrieves the income report ✅
+- [x] GET /plaid/status returns connection status ✅
+- [x] DELETE /plaid/disconnect disconnects Plaid ✅
+- [x] POST /plaid/webhook handles Plaid webhooks ✅
+- [x] TenantProfile stores Plaid access_token (encrypted with AES-256-CBC) ✅
+- [x] ScoringService uses Plaid income for calculations ✅
+- [x] FinancialStabilityScore added to TenantScoring ✅
+- [ ] Frontend Plaid Link component integrated (frontend task)
+- [x] Tests cover Plaid integration (20 tests, mocked) ✅
 - [x] Coverage > 80% ✅
 - [x] Git commit: "feat: add Plaid integration for income verification" ✅
 
 **Security Notes:**
 
-- ⚠️ Plaid access_token должен быть зашифрован в БД
-- ⚠️ Использовать environment variables для Plaid credentials
-- ⚠️ Проверить географические ограничения для Spain/EU
-- ⚠️ Рассмотреть регистрацию UK entity для доступа к Plaid
+- ⚠️ Plaid access_token must be encrypted in the DB
+- ⚠️ Use environment variables for Plaid credentials
+- ⚠️ Verify geographic restrictions for Spain/EU
+- ⚠️ Consider registering a UK entity to access Plaid
 
 **Optional: Plaid Identity Verification**
 
-Если нужна дополнительная верификация документов:
+If additional document verification is needed:
 
 ```typescript
 // POST /api/v1/plaid/identity-verification/create
 // Webhook: /api/v1/plaid/webhooks/identity
-// Стоимость: ~$0.70-1.50 за проверку
+// Cost: ~$0.70-1.50 per check
 ```
 
 ---
 
-## 📝 TDD Checklist (для каждой фичи)
+## 📝 TDD Checklist (for each feature)
 
-Перед началом работы над новой фичей:
+Before starting work on a new feature:
 
-- [ ] **Red Phase:** Написать failing тесты
+- [ ] **Red Phase:** Write failing tests
 
   ```bash
   npm test -- feature.test.ts --run  # Should FAIL
   ```
 
-- [ ] **Green Phase:** Реализовать минимальный код
-  - Создать Zod schemas (validation)
-  - Реализовать service (business logic)
-  - Реализовать controller (HTTP handlers)
-  - Создать routes
-  - Зарегистрировать в app.ts
+- [ ] **Green Phase:** Implement minimal code
+  - Create Zod schemas (validation)
+  - Implement service (business logic)
+  - Implement controller (HTTP handlers)
+  - Create routes
+  - Register in app.ts
 
-- [ ] **Verify:** Запустить тесты
+- [ ] **Verify:** Run tests
 
   ```bash
   npm test -- feature.test.ts --run  # Should PASS
   ```
 
-- [ ] **Refactor:** Улучшить код
-  - Убрать дублирование
-  - Улучшить читаемость
-  - Добавить error handling
+- [ ] **Refactor:** Improve the code
+  - Remove duplication
+  - Improve readability
+  - Add error handling
 
-- [ ] **Coverage:** Проверить покрытие
+- [ ] **Coverage:** Check coverage
 
   ```bash
   npm run test:coverage  # Should be >80%
@@ -1948,7 +1945,7 @@ export class ScoringService {
 
 ---
 
-## 🔧 Полезные команды
+## 🔧 Useful Commands
 
 ### Development
 
@@ -1989,14 +1986,14 @@ git push
 
 ## 📊 Coverage Goals
 
-**Минимальные требования:**
+**Minimum requirements:**
 
 - Overall: >80%
 - Services: >90%
 - Controllers: >85%
 - Routes: 100%
 
-**Текущий статус:**
+**Current status:**
 
 - Overall: 86%+ ✅ (>80% target achieved!)
 - Services: 86%+ ✅
@@ -2009,42 +2006,42 @@ git push
 
 ## 🎯 Definition of Done
 
-Фича считается завершенной когда:
+A feature is considered complete when:
 
-- [x] Тесты написаны ДО реализации (TDD)
-- [x] Все тесты проходят (Green)
+- [x] Tests written BEFORE implementation (TDD)
+- [x] All tests pass (Green)
 - [x] Coverage > 80%
-- [x] ESLint warnings исправлены
-- [x] Code отформатирован (Prettier)
-- [x] Git commit создан
-- [x] NEXT-STEPS.md обновлен
+- [x] ESLint warnings fixed
+- [x] Code formatted (Prettier)
+- [x] Git commit created
+- [x] NEXT-STEPS.md updated
 
 ---
 
-## 🚀 Quick Start для следующей фичи
+## 🚀 Quick Start for the Next Feature
 
-**Пример: Profile Management API**
+**Example: Profile Management API**
 
 ```bash
-# 1. Создать файл теста
+# 1. Create the test file
 touch tests/profiles.test.ts
 
-# 2. Написать failing тест
+# 2. Write a failing test
 npm test -- profiles.test.ts --run  # RED
 
-# 3. Создать необходимые файлы
+# 3. Create the required files
 touch src/schemas/profile.schema.ts
 touch src/services/profile.service.ts
 touch src/controllers/profile.controller.ts
 touch src/routes/profile.routes.ts
 
-# 4. Реализовать код
+# 4. Implement the code
 # ... implement ...
 
-# 5. Запустить тесты
+# 5. Run tests
 npm test -- profiles.test.ts --run  # GREEN
 
-# 6. Проверить coverage
+# 6. Check coverage
 npm run test:coverage
 
 # 7. Commit
@@ -2054,7 +2051,7 @@ git commit -m "feat: implement profile management API"
 
 ---
 
-## 📚 Дополнительные ресурсы
+## 📚 Additional Resources
 
 - **Prisma Docs:** https://www.prisma.io/docs
 - **Fastify Docs:** https://fastify.dev/docs

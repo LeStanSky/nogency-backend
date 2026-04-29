@@ -1,10 +1,10 @@
 # NoGency AI - Backend API
 
-Backend API для платформы управления арендой недвижимости с AI-скорингом арендаторов.
+Backend API for a rental property management platform with AI-powered tenant scoring.
 
-**Статус:** Production-Ready | 253 теста | 86%+ coverage
+**Status:** Production-Ready | 253 tests | 86%+ coverage
 
-## Технологический стек
+## Tech Stack
 
 - **Runtime:** Node.js 20+
 - **Language:** TypeScript 5+
@@ -19,7 +19,7 @@ Backend API для платформы управления арендой нед
 - **File Storage:** Supabase Storage
 - **Authentication:** JWT + bcrypt
 
-## Реализованные API (Updated: 2026-02-01)
+## Implemented APIs (Updated: 2026-02-01)
 
 ### Authentication API
 
@@ -115,7 +115,7 @@ Backend API для платформы управления арендой нед
 | DELETE | `/api/v1/plaid/disconnect`     | Disconnect Plaid account         |
 | POST   | `/api/v1/plaid/webhook`        | Handle Plaid webhooks            |
 
-## Структура проекта
+## Project Structure
 
 ```
 nogency-back/
@@ -136,21 +136,21 @@ nogency-back/
 └── package.json
 ```
 
-## Установка и запуск
+## Installation & Setup
 
-### 1. Установка зависимостей
+### 1. Install Dependencies
 
 ```bash
 npm install
 ```
 
-### 2. Настройка окружения
+### 2. Environment Configuration
 
 ```bash
 cp .env.example .env
 ```
 
-**Обязательные переменные:**
+**Required variables:**
 
 ```env
 DATABASE_URL=postgresql://...
@@ -167,39 +167,39 @@ PLAID_SECRET=your-plaid-secret
 PLAID_ENV=sandbox
 ```
 
-**Опциональные переменные (мониторинг):**
+**Optional variables (monitoring):**
 
 ```env
 SENTRY_DSN=https://xxx@sentry.io/xxx  # Error tracking
-LOG_LEVEL=info                         # Уровень логирования
-LOG_PRETTY=false                       # Pretty print в development
+LOG_LEVEL=info                         # Log level
+LOG_PRETTY=false                       # Pretty print in development
 ```
 
-### 2.5. Настройка Git (Line Endings)
+### 2.5. Git Configuration (Line Endings)
 
-Проект использует **LF (Unix-style)** окончания строк для всех файлов. Это обеспечивает совместимость между Windows, Linux и Mac.
+The project uses **LF (Unix-style)** line endings for all files. This ensures compatibility across Windows, Linux, and Mac.
 
-**Автоматическая настройка:**
+**Automatic setup:**
 
-Файл `.gitattributes` уже настроен в репозитории. При первом клонировании выполните:
+The `.gitattributes` file is already configured in the repository. On first clone, run:
 
 ```bash
-# Настроить Git для правильной обработки line endings
+# Configure Git to handle line endings correctly
 git config core.autocrlf input
 
-# Переиндексировать файлы с правильными окончаниями строк
+# Re-normalize files with correct line endings
 git add --renormalize .
 ```
 
-**Что это делает:**
+**What this does:**
 
-- `core.autocrlf input`: конвертирует CRLF → LF при коммите, но не изменяет файлы при checkout
-- `.gitattributes`: гарантирует, что все текстовые файлы используют LF в репозитории
-- На Windows Git автоматически конвертирует LF → CRLF локально, но в репозитории остается LF
+- `core.autocrlf input`: converts CRLF → LF on commit but does not modify files on checkout
+- `.gitattributes`: ensures all text files use LF in the repository
+- On Windows, Git automatically converts LF → CRLF locally, but LF is preserved in the repository
 
-**Важно:** Если вы видите предупреждения `LF will be replaced by CRLF` при `git add`, выполните команды выше.
+**Important:** If you see `LF will be replaced by CRLF` warnings during `git add`, run the commands above.
 
-### 3. База данных
+### 3. Database
 
 ```bash
 npm run db:generate    # Generate Prisma Client
@@ -207,7 +207,7 @@ npm run db:push        # Push schema (dev)
 npm run db:studio      # Open Prisma Studio
 ```
 
-### 4. Запуск
+### 4. Running
 
 ```bash
 npm run dev            # Development (port 8000)
@@ -215,7 +215,7 @@ npm run build          # Build
 npm start              # Production
 ```
 
-### 5. Тесты
+### 5. Tests
 
 ```bash
 npm test               # Watch mode
@@ -223,7 +223,7 @@ npm test -- --run      # Single run
 npm run test:coverage  # With coverage
 ```
 
-## Команды NPM
+## NPM Commands
 
 | Command                 | Description             |
 | ----------------------- | ----------------------- |
@@ -250,20 +250,20 @@ npm run test:coverage  # With coverage
 
 ## Test Coverage
 
-- **253 теста** across 16 test files
+- **253 tests** across 16 test files
 - **86%+ overall coverage**
 - All APIs fully tested
 
-## Документация
+## Documentation
 
 - [NEXT-STEPS.md](./NEXT-STEPS.md) - Development roadmap
 - [CLAUDE.md](./CLAUDE.md) - Claude Code instructions
 
-## Обработка ошибок
+## Error Handling
 
-Проект использует стандартизированную систему обработки ошибок:
+The project uses a standardized error handling system:
 
-- **Custom Error Classes** (`src/utils/errors.ts`): Специализированные классы ошибок для разных HTTP статусов
+- **Custom Error Classes** (`src/utils/errors.ts`): Specialized error classes for different HTTP status codes
   - `BadRequestError` (400)
   - `ValidationError` (400)
   - `UnauthorizedError` (401)
@@ -275,8 +275,8 @@ npm run test:coverage  # With coverage
   - `InternalServerError` (500)
   - `ServiceUnavailableError` (503)
 
-- **Error Schemas** (`src/schemas/error.schema.ts`): Стандартизированные схемы ошибок для Swagger/OpenAPI документации
-- **Consistent Error Responses**: Все ошибки возвращают единый формат:
+- **Error Schemas** (`src/schemas/error.schema.ts`): Standardized error schemas for Swagger/OpenAPI documentation
+- **Consistent Error Responses**: All errors return a unified format:
   ```json
   {
     "error": "Error message",
@@ -288,14 +288,14 @@ npm run test:coverage  # With coverage
   }
   ```
 
-## Мониторинг и Логирование
+## Monitoring & Logging
 
-- **Structured Logging (Pino):** JSON-формат для production, pretty printing для development
-- **Sentry Integration:** Error tracking для 500 ошибок (4xx фильтруются)
-- **Request ID Tracing:** Уникальный ID для каждого запроса (x-request-id header)
-- **Sensitive Data Redaction:** Автоматическая редакция паролей, токенов, API ключей
-- **Performance Logging:** Warnings для медленных запросов (>3s)
-- **Service Loggers:** Отдельные логгеры для каждого модуля (auth, payment, email, etc.)
+- **Structured Logging (Pino):** JSON format for production, pretty printing for development
+- **Sentry Integration:** Error tracking for 500 errors (4xx are filtered out)
+- **Request ID Tracing:** Unique ID per request (x-request-id header)
+- **Sensitive Data Redaction:** Automatic redaction of passwords, tokens, and API keys
+- **Performance Logging:** Warnings for slow requests (>3s)
+- **Service Loggers:** Dedicated loggers per module (auth, payment, email, etc.)
 
 **Environment Variables:**
 
@@ -305,7 +305,7 @@ LOG_LEVEL=info                         # trace, debug, info, warn, error, fatal
 LOG_PRETTY=false                       # Pretty print in development
 ```
 
-## Безопасность
+## Security
 
 - JWT authentication (7 days expiry)
 - Password hashing (bcrypt, 10 rounds)
@@ -332,25 +332,25 @@ MIT
 
 ### 2026-02-01
 
-- ✅ Интеграция Plaid для верификации доходов
-- ✅ 6 новых API endpoints для Plaid
-- ✅ AES-256-CBC шифрование Plaid access tokens
-- ✅ Улучшенный AI scoring (6 компонентов вместо 5)
-- ✅ FinancialStabilityScore добавлен в TenantScoring
-- ✅ 20 новых тестов для Plaid интеграции
-- ✅ Обновлена документация
+- ✅ Plaid integration for income verification
+- ✅ 6 new Plaid API endpoints
+- ✅ AES-256-CBC encryption for Plaid access tokens
+- ✅ Improved AI scoring (6 components instead of 5)
+- ✅ FinancialStabilityScore added to TenantScoring
+- ✅ 20 new tests for Plaid integration
+- ✅ Documentation updated
 
 ### 2026-01-20
 
-- ✅ Добавлен structured logging (Pino)
-- ✅ Интеграция Sentry для error tracking
+- ✅ Added structured logging (Pino)
+- ✅ Sentry integration for error tracking
 - ✅ Request ID tracing middleware
-- ✅ Service-specific логгеры
-- ✅ Graceful shutdown с flush Sentry
-- ✅ Обновлена документация
+- ✅ Service-specific loggers
+- ✅ Graceful shutdown with Sentry flush
+- ✅ Documentation updated
 
 ### 2026-01-16
 
-- ✅ Стандартизирована обработка ошибок (custom error classes)
-- ✅ Добавлены схемы ошибок для Swagger документации
-- ✅ Обновлены все контроллеры и роуты для использования стандартизированных ошибок
+- ✅ Standardized error handling (custom error classes)
+- ✅ Added error schemas for Swagger documentation
+- ✅ Updated all controllers and routes to use standardized errors

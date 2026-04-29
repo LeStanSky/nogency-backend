@@ -259,12 +259,12 @@ const apiKey = config.anthropic.apiKey;
 
 **Error Handling (Standardized):**
 
-Проект использует стандартизированные классы ошибок из `src/utils/errors.ts`:
+The project uses standardized error classes from `src/utils/errors.ts`:
 
 ```typescript
 import { NotFoundError, ValidationError, UnauthorizedError } from '../utils/errors.js';
 
-// Throw errors in controllers - они автоматически обрабатываются middleware
+// Throw errors in controllers - they are automatically handled by middleware
 if (!resource) {
   throw new NotFoundError('Resource not found');
 }
@@ -297,7 +297,7 @@ if (!user) {
 - `ServiceUnavailableError` (503) - Service temporarily unavailable
 
 **Error Response Format:**
-Все ошибки автоматически преобразуются в единый формат:
+All errors are automatically converted to a unified format:
 
 ```json
 {
@@ -311,7 +311,7 @@ if (!user) {
 ```
 
 **Error Schemas for Swagger:**
-Используйте `errorResponseSchema` из `src/schemas/error.schema.ts` в роутах для каждого статуса ошибки:
+Use `errorResponseSchema` from `src/schemas/error.schema.ts` in routes for each error status:
 
 ```typescript
 import { errorResponseSchema } from '../schemas/error.schema.js';
@@ -365,7 +365,7 @@ app.get(
 );
 ```
 
-**Примечание:** `commonErrorResponses` определен в `error.schema.ts`, но в проекте используется паттерн с явным указанием каждого статуса ошибки с `errorResponseSchema` для большей гибкости и явности.
+**Note:** `commonErrorResponses` is defined in `error.schema.ts`, but the project uses a pattern of explicitly specifying each error status with `errorResponseSchema` for greater flexibility and explicitness.
 
 **Zod Validation (with Error Classes):**
 
@@ -376,12 +376,12 @@ const parseResult = schema.safeParse(request.body);
 if (!parseResult.success) {
   throw new ValidationError('Validation failed', parseResult.error.flatten().fieldErrors);
 }
-// Если валидация прошла, используем parseResult.data
+// If validation passed, use parseResult.data
 ```
 
 **Logging (Structured):**
 
-Проект использует структурированное логирование через `src/utils/logger.ts`:
+The project uses structured logging via `src/utils/logger.ts`:
 
 ```typescript
 import { logger, serviceLoggers } from '../utils/logger.js';

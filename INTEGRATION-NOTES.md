@@ -1,17 +1,17 @@
 # Integration Notes: nogency-back + nogency-ai
 
-**Дата анализа:** 2026-02-01
-**Цель:** Интеграция бэкенда и фронтенда в единый рабочий проект
+**Analysis date:** 2026-02-01
+**Goal:** Integrate the backend and frontend into a single working project
 
 ---
 
-## Проект 1: Бэкенд (nogency-back)
+## Project 1: Backend (nogency-back)
 
-**Путь:** `C:\Users\stale\Documents\Projects\JS Projects\nogency-back`
+**Path:** `C:\Users\stale\Documents\Projects\JS Projects\nogency-back`
 
-### Технический стек
+### Tech stack
 
-| Компонент  | Технология                        |
+| Component  | Technology                        |
 | ---------- | --------------------------------- |
 | Framework  | Fastify 4.28                      |
 | Language   | TypeScript 5.3                    |
@@ -23,41 +23,41 @@
 | Validation | Zod                               |
 | Testing    | Vitest (233 tests, 86%+ coverage) |
 
-### Конфигурация сервера
+### Server configuration
 
-- **Порт:** `8000` (переменная `PORT`)
-- **CORS origin:** из `FRONTEND_URL` (по умолчанию `http://localhost:3000`)
+- **Port:** `8000` (env variable `PORT`)
+- **CORS origin:** from `FRONTEND_URL` (default `http://localhost:3000`)
 - **API prefix:** `/api/v1`
 
-### Основные endpoints
+### Main endpoints
 
-| API          | Prefix                 | Описание                                 |
-| ------------ | ---------------------- | ---------------------------------------- |
-| Auth         | `/api/v1/auth`         | Регистрация, логин, JWT                  |
-| Profiles     | `/api/v1/profiles`     | Профили владельцев/арендаторов           |
-| Documents    | `/api/v1/documents`    | Загрузка, AI верификация (Claude Vision) |
-| Properties   | `/api/v1/properties`   | CRUD недвижимости                        |
-| Listings     | `/api/v1/listings`     | Объявления, публикация                   |
-| Applications | `/api/v1/applications` | Заявки с AI скорингом                    |
-| Contracts    | `/api/v1/contracts`    | Жизненный цикл контрактов                |
-| Payments     | `/api/v1/payments`     | Stripe интеграция, webhooks              |
-| Health       | `/health`              | Проверка здоровья                        |
-| Docs         | `/docs`                | Swagger UI                               |
+| API          | Prefix                 | Description                             |
+| ------------ | ---------------------- | --------------------------------------- |
+| Auth         | `/api/v1/auth`         | Registration, login, JWT                |
+| Profiles     | `/api/v1/profiles`     | Owner/tenant profiles                   |
+| Documents    | `/api/v1/documents`    | Upload, AI verification (Claude Vision) |
+| Properties   | `/api/v1/properties`   | Property CRUD                           |
+| Listings     | `/api/v1/listings`     | Listings, publishing                    |
+| Applications | `/api/v1/applications` | Applications with AI scoring            |
+| Contracts    | `/api/v1/contracts`    | Contract lifecycle                      |
+| Payments     | `/api/v1/payments`     | Stripe integration, webhooks            |
+| Health       | `/health`              | Health check                            |
+| Docs         | `/docs`                | Swagger UI                              |
 
-### Команды запуска
+### Run commands
 
 ```bash
-npm install          # Установка зависимостей
-npm run dev          # Dev сервер с hot-reload (порт 8000)
-npm run build        # TypeScript компиляция
-npm start            # Production запуск
-npm test             # Тесты в watch режиме
-npm run test:coverage # Тесты с покрытием
+npm install          # Install dependencies
+npm run dev          # Dev server with hot-reload (port 8000)
+npm run build        # TypeScript compilation
+npm start            # Production start
+npm test             # Tests in watch mode
+npm run test:coverage # Tests with coverage
 ```
 
-### Переменные окружения (.env)
+### Environment variables (.env)
 
-**Обязательные:**
+**Required:**
 
 ```env
 DATABASE_URL=postgresql://user:pass@host:5432/db
@@ -71,7 +71,7 @@ JWT_SECRET=your-secret-here
 FRONTEND_URL=http://localhost:3000
 ```
 
-**Опциональные:**
+**Optional:**
 
 ```env
 NODE_ENV=development
@@ -82,9 +82,9 @@ SENTRY_DSN=
 LOG_LEVEL=info
 ```
 
-### Ключевые файлы
+### Key files
 
-- `src/config.ts` - Централизованная конфигурация
+- `src/config.ts` - Centralized configuration
 - `src/app.ts` - Fastify application factory
 - `src/index.ts` - Entry point
 - `src/routes/*.ts` - Route handlers
@@ -94,53 +94,53 @@ LOG_LEVEL=info
 
 ---
 
-## Проект 2: Фронтенд (nogency-ai)
+## Project 2: Frontend (nogency-ai)
 
-**Путь:** `C:\Users\stale\Documents\Projects\JS Projects\nogency-ai`
+**Path:** `C:\Users\stale\Documents\Projects\JS Projects\nogency-ai`
 
-### Технический стек
+### Tech stack
 
-| Компонент       | Технология                   |
+| Component       | Technology                   |
 | --------------- | ---------------------------- |
 | Framework       | Next.js 16.0.10              |
 | React           | 19.0.1                       |
 | Language        | TypeScript 5.6.3             |
 | ORM             | Drizzle ORM                  |
-| Database        | PostgreSQL (собственная)     |
+| Database        | PostgreSQL (dedicated)       |
 | Auth            | NextAuth 5.0.0-beta.25       |
 | AI              | Groq LLM                     |
 | Styling         | TailwindCSS 4.1.13           |
 | UI              | Radix UI + Custom components |
 | Package Manager | pnpm 9.12.3                  |
 
-### Конфигурация сервера
+### Server configuration
 
-- **Порт:** `3000` (стандартный Next.js)
-- **API routes:** Встроенные в Next.js (`app/api/...`)
+- **Port:** `3000` (Next.js default)
+- **API routes:** Built into Next.js (`app/api/...`)
 
-### Внутренние API endpoints (Next.js routes)
+### Internal API endpoints (Next.js routes)
 
-| Endpoint            | Метод  | Описание                       |
-| ------------------- | ------ | ------------------------------ |
-| `/api/auth/*`       | \*     | NextAuth handlers              |
-| `/api/chat`         | POST   | Отправка сообщения (streaming) |
-| `/api/chat?id=...`  | DELETE | Удаление чата                  |
-| `/api/history`      | GET    | История чатов                  |
-| `/api/vote`         | POST   | Лайк/дизлайк                   |
-| `/api/document`     | POST   | Создание документа             |
-| `/api/files/upload` | POST   | Загрузка файлов                |
-| `/api/suggestions`  | POST   | AI предложения                 |
+| Endpoint            | Method | Description              |
+| ------------------- | ------ | ------------------------ |
+| `/api/auth/*`       | \*     | NextAuth handlers        |
+| `/api/chat`         | POST   | Send message (streaming) |
+| `/api/chat?id=...`  | DELETE | Delete chat              |
+| `/api/history`      | GET    | Chat history             |
+| `/api/vote`         | POST   | Like/dislike             |
+| `/api/document`     | POST   | Create document          |
+| `/api/files/upload` | POST   | Upload files             |
+| `/api/suggestions`  | POST   | AI suggestions           |
 
-### Команды запуска
+### Run commands
 
 ```bash
-pnpm install         # Установка зависимостей
-pnpm dev             # Dev сервер (порт 3000)
+pnpm install         # Install dependencies
+pnpm dev             # Dev server (port 3000)
 pnpm build           # Production build
-pnpm start           # Production запуск
+pnpm start           # Production start
 ```
 
-### Переменные окружения (.env)
+### Environment variables (.env)
 
 ```env
 AUTH_SECRET=****
@@ -150,39 +150,39 @@ REDIS_URL=****
 BLOB_READ_WRITE_TOKEN=****
 ```
 
-### Ключевые файлы
+### Key files
 
-- `next.config.ts` - Next.js конфигурация
-- `proxy.ts` - Middleware/Proxy настройки
-- `app/(auth)/auth.ts` - NextAuth конфигурация
-- `app/(chat)/api/chat/route.ts` - Основной chat endpoint
-- `lib/ai/providers.ts` - Groq AI конфигурация
+- `next.config.ts` - Next.js configuration
+- `proxy.ts` - Middleware/Proxy settings
+- `app/(auth)/auth.ts` - NextAuth configuration
+- `app/(chat)/api/chat/route.ts` - Main chat endpoint
+- `lib/ai/providers.ts` - Groq AI configuration
 - `lib/db/schema.ts` - Drizzle ORM schema
 - `lib/utils.ts` - Fetch helpers
 
 ---
 
-## Текущее состояние
+## Current state
 
-### Проблема: Проекты полностью независимы
+### Problem: the projects are fully independent
 
-1. **Разные базы данных** - бэкенд использует Supabase PostgreSQL, фронтенд свою PostgreSQL
-2. **Разная аутентификация** - бэкенд JWT, фронтенд NextAuth
-3. **Разные AI провайдеры** - бэкенд Claude, фронтенд Groq
-4. **Фронтенд не вызывает бэкенд** - использует собственные API routes
+1. **Different databases** - the backend uses Supabase PostgreSQL, the frontend has its own PostgreSQL
+2. **Different authentication** - backend uses JWT, frontend uses NextAuth
+3. **Different AI providers** - backend uses Claude, frontend uses Groq
+4. **The frontend does not call the backend** - it relies on its own API routes
 
-### Что представляют проекты
+### What each project represents
 
-- **Бэкенд (nogency-back):** API платформы управления арендой с AI-скорингом арендаторов
-- **Фронтенд (nogency-ai):** AI чат-бот для консультаций по недвижимости
+- **Backend (nogency-back):** API for a rental management platform with AI-powered tenant scoring
+- **Frontend (nogency-ai):** AI chatbot for real estate consultations
 
 ---
 
-## План интеграции
+## Integration plan
 
-### Этап 1: Параллельный запуск (базовый)
+### Stage 1: Run in parallel (baseline)
 
-**Терминал 1 - Бэкенд:**
+**Terminal 1 - Backend:**
 
 ```bash
 cd C:\Users\stale\Documents\Projects\JS Projects\nogency-back
@@ -190,7 +190,7 @@ npm run dev
 # http://localhost:8000
 ```
 
-**Терминал 2 - Фронтенд:**
+**Terminal 2 - Frontend:**
 
 ```bash
 cd C:\Users\stale\Documents\Projects\JS Projects\nogency-ai
@@ -198,23 +198,23 @@ pnpm dev
 # http://localhost:3000
 ```
 
-**Проверка связи:**
+**Connectivity check:**
 
-- Бэкенд: `http://localhost:8000/health`
+- Backend: `http://localhost:8000/health`
 - Swagger: `http://localhost:8000/docs`
-- Фронтенд: `http://localhost:3000`
+- Frontend: `http://localhost:3000`
 
-### Этап 2: Настройка CORS
+### Stage 2: CORS configuration
 
-**Бэкенд `.env`:**
+**Backend `.env`:**
 
 ```env
 FRONTEND_URL=http://localhost:3000
 ```
 
-### Этап 3: API клиент на фронтенде
+### Stage 3: API client on the frontend
 
-Создать `lib/api/backend-client.ts`:
+Create `lib/api/backend-client.ts`:
 
 ```typescript
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000/api/v1';
@@ -237,7 +237,7 @@ export async function backendFetch(endpoint: string, options?: RequestInit) {
   return response.json();
 }
 
-// Примеры использования:
+// Usage examples:
 export const authAPI = {
   login: (email: string, password: string) =>
     backendFetch('/auth/login', {
@@ -262,48 +262,48 @@ export const propertiesAPI = {
 };
 ```
 
-**Фронтенд `.env`:**
+**Frontend `.env`:**
 
 ```env
 NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
 ```
 
-### Этап 4: Синхронизация аутентификации
+### Stage 4: Authentication synchronization
 
-**Вариант A: Фронтенд использует JWT от бэкенда**
+**Option A: Frontend uses JWT issued by the backend**
 
-- При логине вызывать `/api/v1/auth/login`
-- Сохранять JWT в cookies/localStorage
-- Передавать JWT в заголовке `Authorization: Bearer <token>`
+- On login, call `/api/v1/auth/login`
+- Store the JWT in cookies/localStorage
+- Pass the JWT via the `Authorization: Bearer <token>` header
 
-**Вариант B: Общая база пользователей**
+**Option B: Shared user database**
 
-- Синхронизировать схемы User между Prisma и Drizzle
-- Использовать одну PostgreSQL базу
+- Synchronize the User schemas between Prisma and Drizzle
+- Use a single PostgreSQL database
 
-**Вариант C: Прокси через Next.js**
+**Option C: Proxy through Next.js**
 
-- Next.js API routes проксируют запросы к бэкенду
-- NextAuth выдаёт токен, Next.js добавляет его к запросам
+- Next.js API routes proxy requests to the backend
+- NextAuth issues a token and Next.js attaches it to outgoing requests
 
-### Этап 5: Интеграция функционала
+### Stage 5: Feature integration
 
-Подключить на фронтенде:
+Wire up on the frontend:
 
-1. **Регистрация/Логин** → `/api/v1/auth`
-2. **Профили** → `/api/v1/profiles`
-3. **Загрузка документов** → `/api/v1/documents`
-4. **Управление недвижимостью** → `/api/v1/properties`
-5. **Объявления** → `/api/v1/listings`
-6. **Заявки** → `/api/v1/applications`
-7. **Контракты** → `/api/v1/contracts`
-8. **Платежи** → `/api/v1/payments`
+1. **Registration/Login** → `/api/v1/auth`
+2. **Profiles** → `/api/v1/profiles`
+3. **Document upload** → `/api/v1/documents`
+4. **Property management** → `/api/v1/properties`
+5. **Listings** → `/api/v1/listings`
+6. **Applications** → `/api/v1/applications`
+7. **Contracts** → `/api/v1/contracts`
+8. **Payments** → `/api/v1/payments`
 
 ---
 
-## Варианты архитектуры
+## Architecture options
 
-### Вариант 1: AI чат + арендная платформа (гибридный)
+### Option 1: AI chat + rental platform (hybrid)
 
 ```
 ┌─────────────────┐     ┌─────────────────┐
@@ -323,15 +323,15 @@ NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
     └─────────┘            └─────────┘
 ```
 
-### Вариант 2: Единый бэкенд (полная интеграция)
+### Option 2: Unified backend (full integration)
 
 ```
 ┌─────────────────┐     ┌─────────────────┐
 │   Frontend      │────▶│   Backend       │
 │  (Next.js)      │     │  (Fastify)      │
 │                 │     │                 │
-│  - UI только    │     │  - Всё API      │
-│  - Нет своих    │     │  - Auth         │
+│  - UI only      │     │  - All APIs     │
+│  - No own       │     │  - Auth         │
 │    API routes   │     │  - AI (Claude)  │
 │                 │     │  - DB           │
 └─────────────────┘     └────────┬────────┘
@@ -342,7 +342,7 @@ NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
                            └─────────┘
 ```
 
-### Вариант 3: Микросервисы (расширенный)
+### Option 3: Microservices (extended)
 
 ```
 ┌─────────────────┐
@@ -366,23 +366,23 @@ NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
 
 ---
 
-## Чеклист интеграции
+## Integration checklist
 
-- [ ] Запустить оба сервиса параллельно
-- [ ] Проверить CORS настройки
-- [ ] Создать API клиент на фронтенде
-- [ ] Выбрать стратегию аутентификации
-- [ ] Синхронизировать или объединить базы данных
-- [ ] Добавить UI компоненты для бэкенд функций
-- [ ] Интегрировать формы регистрации/логина
-- [ ] Добавить страницы управления недвижимостью
-- [ ] Подключить загрузку документов
-- [ ] Интегрировать платежи (Stripe)
-- [ ] Тестирование E2E
+- [ ] Run both services in parallel
+- [ ] Verify CORS settings
+- [ ] Create an API client on the frontend
+- [ ] Choose an authentication strategy
+- [ ] Synchronize or merge the databases
+- [ ] Add UI components for backend features
+- [ ] Wire up the registration/login forms
+- [ ] Add property management pages
+- [ ] Connect document upload
+- [ ] Integrate payments (Stripe)
+- [ ] E2E testing
 
 ---
 
-## Полезные ссылки
+## Useful links
 
 - Backend Swagger: `http://localhost:8000/docs`
 - Backend Health: `http://localhost:8000/health`
@@ -390,4 +390,4 @@ NEXT_PUBLIC_API_URL=http://localhost:8000/api/v1
 
 ---
 
-**Последнее обновление:** 2026-02-01
+**Last updated:** 2026-02-01
