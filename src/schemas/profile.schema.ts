@@ -7,8 +7,8 @@ import { z } from 'zod';
 export const createOwnerProfileSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
-  documentType: z.enum(['DNI', 'NIE', 'TIE', 'PASSPORT']),
-  documentNumber: z.string().min(1, 'Document number is required'),
+  documentType: z.enum(['DNI', 'NIE', 'TIE', 'PASSPORT']).optional(),
+  documentNumber: z.string().min(1).optional(),
   isCompany: z.boolean().optional(),
   companyName: z.string().optional(),
   taxId: z.string().optional(),

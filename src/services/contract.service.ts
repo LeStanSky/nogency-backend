@@ -307,6 +307,12 @@ export class ContractService {
       throw new Error('Only DRAFT contracts can be sent for signing');
     }
 
+    if (!contract.owner.documentType || !contract.owner.documentNumber) {
+      throw new Error(
+        'Owner profile is missing document data. Please complete your profile before sending the contract for signing.'
+      );
+    }
+
     // Generate PDF and upload to storage
     let documentUrl: string | undefined;
     try {

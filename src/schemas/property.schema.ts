@@ -7,8 +7,8 @@ import { z } from 'zod';
 export const addressSchema = z.object({
   street: z.string().min(1, 'Street is required'),
   number: z.string().optional(),
-  city: z.string().min(1, 'City is required'),
-  postalCode: z.string().min(1, 'Postal code is required'),
+  city: z.string().default(''),
+  postalCode: z.string().default(''),
   province: z.string().optional(),
   country: z.string().optional(),
 });
@@ -17,12 +17,25 @@ export const addressSchema = z.object({
 // Property Type Enums
 // ============================================================================
 
-export const propertyTypeEnum = z.enum(['APARTMENT', 'HOUSE', 'STUDIO', 'ROOM']);
+export const propertyTypeEnum = z.enum([
+  'APARTMENT',
+  'HOUSE',
+  'STUDIO',
+  'ROOM',
+  'PENTHOUSE',
+  'DUPLEX',
+  'LOFT',
+  'OTHER',
+]);
 export const repairQualityEnum = z.enum(['NEW', 'GOOD', 'OLD']);
 export const furnishedTypeEnum = z.enum(['NONE', 'PARTLY', 'FULLY']);
-export const heatingTypeEnum = z.enum(['GAS', 'ELECTRIC', 'CENTRAL', 'NONE']);
+export const heatingTypeEnum = z.enum(['GAS', 'ELECTRIC', 'CENTRAL', 'INDIVIDUAL', 'NONE']);
 export const hotWaterTypeEnum = z.enum(['GAS', 'ELECTRIC', 'CENTRAL']);
 export const kitchenTypeEnum = z.enum(['SEPARATE', 'OPEN']);
+export const overallConditionEnum = z.enum(['NEW', 'GOOD', 'SATISFACTORY', 'NEEDS_WORK']);
+export const energyClassEnum = z.enum(['A', 'B', 'C', 'D', 'E', 'F', 'G']);
+export const petsPolicyEnum = z.enum(['YES', 'NO', 'NEGOTIABLE']);
+export const smokingPolicyEnum = z.enum(['YES', 'NO']);
 
 // ============================================================================
 // Create Property Schema
@@ -51,6 +64,31 @@ export const createPropertySchema = z.object({
   windowsDirection: z.string().optional(),
   amenities: z.array(z.string()).optional(),
   cadastralNumber: z.string().optional(),
+  // Onboarding fields
+  addressRaw: z.string().optional(),
+  hasElevator: z.boolean().optional(),
+  outdoorFeatures: z.array(z.string()).optional(),
+  overallCondition: overallConditionEnum.optional(),
+  buildingYear: z.number().int().min(1800).max(new Date().getFullYear()).optional(),
+  energyClass: energyClassEnum.optional(),
+  kitchenAppliances: z.array(z.string()).optional(),
+  washingFacilities: z.array(z.string()).optional(),
+  bathroomFeatures: z.array(z.string()).optional(),
+  hotWaterSystems: z.array(z.string()).optional(),
+  airConditioningTypes: z.array(z.string()).optional(),
+  otherAmenities: z.array(z.string()).optional(),
+  parkingOptions: z.array(z.string()).optional(),
+  electricityIncluded: z.boolean().optional(),
+  waterIncluded: z.boolean().optional(),
+  gasIncluded: z.boolean().optional(),
+  petsAllowed: petsPolicyEnum.optional(),
+  kidsAllowed: petsPolicyEnum.optional(),
+  smokingAllowed: smokingPolicyEnum.optional(),
+  maxTenants: z.number().int().positive().optional(),
+  moveInOption: z.string().optional(),
+  moveInDate: z.string().optional(),
+  moveOutOption: z.string().optional(),
+  moveOutDate: z.string().optional(),
 });
 
 // ============================================================================
@@ -80,6 +118,31 @@ export const updatePropertySchema = z.object({
   windowsDirection: z.string().optional(),
   amenities: z.array(z.string()).optional(),
   cadastralNumber: z.string().optional(),
+  // Onboarding fields
+  addressRaw: z.string().optional(),
+  hasElevator: z.boolean().optional(),
+  outdoorFeatures: z.array(z.string()).optional(),
+  overallCondition: overallConditionEnum.optional(),
+  buildingYear: z.number().int().min(1800).max(new Date().getFullYear()).optional(),
+  energyClass: energyClassEnum.optional(),
+  kitchenAppliances: z.array(z.string()).optional(),
+  washingFacilities: z.array(z.string()).optional(),
+  bathroomFeatures: z.array(z.string()).optional(),
+  hotWaterSystems: z.array(z.string()).optional(),
+  airConditioningTypes: z.array(z.string()).optional(),
+  otherAmenities: z.array(z.string()).optional(),
+  parkingOptions: z.array(z.string()).optional(),
+  electricityIncluded: z.boolean().optional(),
+  waterIncluded: z.boolean().optional(),
+  gasIncluded: z.boolean().optional(),
+  petsAllowed: petsPolicyEnum.optional(),
+  kidsAllowed: petsPolicyEnum.optional(),
+  smokingAllowed: smokingPolicyEnum.optional(),
+  maxTenants: z.number().int().positive().optional(),
+  moveInOption: z.string().optional(),
+  moveInDate: z.string().optional(),
+  moveOutOption: z.string().optional(),
+  moveOutDate: z.string().optional(),
 });
 
 // ============================================================================

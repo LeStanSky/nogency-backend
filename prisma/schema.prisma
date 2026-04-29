@@ -18,8 +18,8 @@ datasource db {
 model User {
   id                       String    @id @default(uuid())
   email                    String    @unique
-  phone                    String?
-  passwordHash             String    @map("password_hash")
+  phone                    String?   @unique
+  passwordHash             String?   @map("password_hash")
   isEmailVerified          Boolean   @default(false) @map("is_email_verified")
   isPhoneVerified          Boolean   @default(false) @map("is_phone_verified")
   preferredLanguage        String?   @map("preferred_language")
@@ -95,8 +95,8 @@ model OwnerProfile {
   userId           String        @unique @map("user_id")
   firstName        String        @map("first_name")
   lastName         String        @map("last_name")
-  documentType     DocumentType  @map("document_type")
-  documentNumber   String        @map("document_number")
+  documentType     DocumentType? @map("document_type")
+  documentNumber   String?       @map("document_number")
   isCompany        Boolean       @default(false) @map("is_company")
   companyName      String?       @map("company_name")
   taxId            String?       @map("tax_id")
@@ -223,6 +223,42 @@ model Property {
   // Amenities (stored as JSON array)
   amenities             Json?
 
+  // Additional address field (flat string for display/search)
+  addressRaw            String?             @map("address_raw")
+
+  // Building details (onboarding)
+  hasElevator           Boolean?            @map("has_elevator")
+  outdoorFeatures       String[]            @map("outdoor_features")
+  overallCondition      String?             @map("overall_condition")
+  buildingYear          Int?                @map("building_year")
+  energyClass           String?             @map("energy_class")
+
+  // Appliances & facilities (onboarding)
+  kitchenAppliances     String[]            @map("kitchen_appliances")
+  washingFacilities     String[]            @map("washing_facilities")
+  bathroomFeatures      String[]            @map("bathroom_features")
+  hotWaterSystems       String[]            @map("hot_water_systems")
+  airConditioningTypes  String[]            @map("air_conditioning_types")
+  otherAmenities        String[]            @map("other_amenities")
+  parkingOptions        String[]            @map("parking_options")
+
+  // Utilities included in rent
+  electricityIncluded   Boolean?            @map("electricity_included")
+  waterIncluded         Boolean?            @map("water_included")
+  gasIncluded           Boolean?            @map("gas_included")
+
+  // Tenant rules
+  petsAllowed           String?             @map("pets_allowed")
+  kidsAllowed           String?             @map("kids_allowed")
+  smokingAllowed        String?             @map("smoking_allowed")
+  maxTenants            Int?                @map("max_tenants")
+
+  // Move-in/out preferences
+  moveInOption          String?             @map("move_in_option")
+  moveInDate            DateTime?           @map("move_in_date") @db.Date
+  moveOutOption         String?             @map("move_out_option")
+  moveOutDate           DateTime?           @map("move_out_date") @db.Date
+
   // Verification
   isVerified            Boolean             @default(false) @map("is_verified")
   verificationStatus    VerificationStatus  @default(PENDING) @map("verification_status")
@@ -248,6 +284,10 @@ enum PropertyType {
   HOUSE
   STUDIO
   ROOM
+  PENTHOUSE
+  DUPLEX
+  LOFT
+  OTHER
 }
 
 enum RepairQuality {
@@ -266,6 +306,7 @@ enum HeatingType {
   GAS
   ELECTRIC
   CENTRAL
+  INDIVIDUAL
   NONE
 }
 

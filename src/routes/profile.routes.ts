@@ -17,16 +17,19 @@ export default async function profileRoutes(app: FastifyInstance) {
       security: [{ bearerAuth: [] }],
       body: {
         type: 'object',
-        required: ['firstName', 'lastName', 'documentType', 'documentNumber'],
+        required: ['firstName', 'lastName'],
         properties: {
           firstName: { type: 'string', description: 'First name' },
           lastName: { type: 'string', description: 'Last name' },
           documentType: {
             type: 'string',
             enum: ['DNI', 'NIE', 'TIE', 'PASSPORT'],
-            description: 'Document type',
+            description: 'Document type (optional, can be added later)',
           },
-          documentNumber: { type: 'string', description: 'Document number' },
+          documentNumber: {
+            type: 'string',
+            description: 'Document number (optional, can be added later)',
+          },
           isCompany: { type: 'boolean', description: 'Is company' },
           companyName: { type: 'string', description: 'Company name (optional)' },
           taxId: { type: 'string', description: 'Tax ID (optional)' },
@@ -36,10 +39,6 @@ export default async function profileRoutes(app: FastifyInstance) {
           {
             firstName: 'Juan',
             lastName: 'Garcia',
-            documentType: 'DNI',
-            documentNumber: '12345678A',
-            isCompany: false,
-            bankAccountIban: 'ES9121000418450200051332',
           },
           {
             firstName: 'Maria',

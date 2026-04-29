@@ -3,6 +3,7 @@ import jwt, { SignOptions } from 'jsonwebtoken';
 import crypto from 'crypto';
 import { prisma } from '../db/client.js';
 import { config } from '../config.js';
+import { Role } from '@prisma/client';
 import { RegisterInput } from '../schemas/auth.schema.js';
 import { EmailService } from './email.service.js';
 import { serviceLoggers } from '../utils/logger.js';
@@ -132,7 +133,7 @@ export class AuthService {
       },
     });
 
-    if (!user) {
+    if (!user || !user.passwordHash) {
       throw new Error('Invalid credentials');
     }
 
@@ -329,5 +330,66 @@ export class AuthService {
     });
 
     return { message: 'Password successfully reset' };
+  }
+
+  /**
+   * Find existing user by phone or create a new one (for OTP auth)
+   */
+  static async findOrCreateByPhone(phone: string, email?: string, role: Role = Role.TENANT) {
+    // Look up existing user by phone
+    let user = await prisma.user.findUnique({
+      where: { phone },
+      include: { roles: true },
+    });
+
+    let isNewUser = false;
+
+    if (!user) {
+      isNewUser = true;
+
+      // Generate placeholder email if not provided
+      const userEmail = email || `phone_${phone.replace('+', '')}@phone.nogency.local`;
+
+      user = await prisma.user.create({
+        data: {
+          email: userEmail,
+          phone,
+          passwordHash: null,
+          isPhoneVerified: true,
+          roles: {
+            create: { role },
+          },
+        },
+        include: { roles: true },
+      });
+
+      log.info({ userId: user.id, phone }, 'New user created via phone OTP');
+    } else {
+      // Update phone verified status if not already
+      if (!user.isPhoneVerified) {
+        await prisma.user.update({
+          where: { id: user.id },
+          data: { isPhoneVerified: true },
+        });
+      }
+
+      log.info({ userId: user.id, phone }, 'Existing user logged in via phone OTP');
+    }
+
+    const token = this.generateToken(user.id);
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        phone: user.phone,
+        isEmailVerified: user.isEmailVerified,
+        isPhoneVerified: true,
+        preferredLanguage: user.preferredLanguage,
+        createdAt: user.createdAt,
+      },
+      token,
+      isNewUser,
+    };
   }
 }

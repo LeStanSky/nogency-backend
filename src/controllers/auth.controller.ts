@@ -8,6 +8,8 @@ import {
   requestPasswordResetSchema,
   resetPasswordSchema,
 } from '../schemas/auth.schema.js';
+import { sendOtpSchema, verifyOtpSchema } from '../schemas/otp.schema.js';
+import { OtpService } from '../services/otp.service.js';
 import { ZodError } from 'zod';
 import {
   ValidationError,
@@ -15,6 +17,7 @@ import {
   UnauthorizedError,
   NotFoundError,
   BadRequestError,
+  ServiceUnavailableError,
 } from '../utils/errors.js';
 
 export class AuthController {
@@ -197,6 +200,75 @@ export class AuthController {
       if (error instanceof Error) {
         if (error.message.includes('Invalid') || error.message.includes('expired')) {
           throw new BadRequestError(error.message);
+        }
+      }
+
+      throw error;
+    }
+  }
+
+  /**
+   * Send OTP to phone number
+   * POST /api/v1/auth/otp/send
+   */
+  static async sendOtp(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const data = sendOtpSchema.parse(request.body);
+      await OtpService.sendOtp(data.phone);
+      return reply.code(200).send({ message: 'OTP sent successfully' });
+    } catch (error) {
+      if (error instanceof ZodError) {
+        throw new ValidationError('Validation error', {
+          fields: error.errors.map((e) => `${e.path.join('.')}: ${e.message}`),
+        });
+      }
+
+      if (error instanceof ValidationError) {
+        throw error;
+      }
+
+      throw new ServiceUnavailableError('Failed to send OTP. Please try again later.');
+    }
+  }
+
+  /**
+   * Verify OTP and login/register user
+   * POST /api/v1/auth/otp/verify
+   */
+  static async verifyOtp(request: FastifyRequest, reply: FastifyReply) {
+    try {
+      const data = verifyOtpSchema.parse(request.body);
+
+      // Verify OTP with Supabase
+      await OtpService.verifyOtp(data.phone, data.code);
+
+      // Find or create user in our database
+      const result = await AuthService.findOrCreateByPhone(data.phone, data.email, data.role);
+
+      return reply.code(200).send(result);
+    } catch (error) {
+      if (error instanceof ZodError) {
+        throw new ValidationError('Validation error', {
+          fields: error.errors.map((e) => `${e.path.join('.')}: ${e.message}`),
+        });
+      }
+
+      if (error instanceof ConflictError || error instanceof UnauthorizedError) {
+        throw error;
+      }
+
+      if (error instanceof Error) {
+        // Prisma unique constraint violation (email already taken)
+        if (
+          error.message.includes('Unique constraint') ||
+          error.message.includes('already exists')
+        ) {
+          throw new ConflictError('Email already in use');
+        }
+
+        // OTP verification errors from OtpService (not Prisma errors)
+        if (!error.message.includes('prisma') && !error.message.includes('invocation')) {
+          throw new UnauthorizedError('Invalid or expired OTP code');
         }
       }
 

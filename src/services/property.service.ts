@@ -37,6 +37,31 @@ export class PropertyService {
         amenities: data.amenities,
         cadastralNumber: data.cadastralNumber,
         verificationStatus: 'PENDING',
+        // Onboarding fields
+        addressRaw: data.addressRaw,
+        hasElevator: data.hasElevator,
+        outdoorFeatures: data.outdoorFeatures,
+        overallCondition: data.overallCondition,
+        buildingYear: data.buildingYear,
+        energyClass: data.energyClass,
+        kitchenAppliances: data.kitchenAppliances,
+        washingFacilities: data.washingFacilities,
+        bathroomFeatures: data.bathroomFeatures,
+        hotWaterSystems: data.hotWaterSystems,
+        airConditioningTypes: data.airConditioningTypes,
+        otherAmenities: data.otherAmenities,
+        parkingOptions: data.parkingOptions,
+        electricityIncluded: data.electricityIncluded,
+        waterIncluded: data.waterIncluded,
+        gasIncluded: data.gasIncluded,
+        petsAllowed: data.petsAllowed,
+        kidsAllowed: data.kidsAllowed,
+        smokingAllowed: data.smokingAllowed,
+        maxTenants: data.maxTenants,
+        moveInOption: data.moveInOption,
+        moveInDate: data.moveInDate ? new Date(data.moveInDate) : undefined,
+        moveOutOption: data.moveOutOption,
+        moveOutDate: data.moveOutDate ? new Date(data.moveOutDate) : undefined,
       },
       include: {
         photos: true,
@@ -155,6 +180,45 @@ export class PropertyService {
     }
     if (data.cadastralNumber !== undefined) {
       updateData.cadastralNumber = data.cadastralNumber;
+    }
+
+    // Onboarding fields
+    const onboardingFields = [
+      'addressRaw',
+      'hasElevator',
+      'outdoorFeatures',
+      'overallCondition',
+      'buildingYear',
+      'energyClass',
+      'kitchenAppliances',
+      'washingFacilities',
+      'bathroomFeatures',
+      'hotWaterSystems',
+      'airConditioningTypes',
+      'otherAmenities',
+      'parkingOptions',
+      'electricityIncluded',
+      'waterIncluded',
+      'gasIncluded',
+      'petsAllowed',
+      'kidsAllowed',
+      'smokingAllowed',
+      'maxTenants',
+      'moveInOption',
+      'moveOutOption',
+    ] as const;
+
+    for (const field of onboardingFields) {
+      if (data[field] !== undefined) {
+        updateData[field] = data[field];
+      }
+    }
+
+    if (data.moveInDate !== undefined) {
+      updateData.moveInDate = data.moveInDate ? new Date(data.moveInDate) : null;
+    }
+    if (data.moveOutDate !== undefined) {
+      updateData.moveOutDate = data.moveOutDate ? new Date(data.moveOutDate) : null;
     }
 
     const property = await prisma.property.update({

@@ -343,6 +343,154 @@ export default async function authRoutes(app: FastifyInstance) {
     handler: AuthController.requestPasswordReset,
   });
 
+  // POST /api/v1/auth/otp/send - Send OTP to phone number
+  app.post('/otp/send', {
+    config: { rateLimit: authRateLimit },
+    schema: {
+      description: 'Send OTP code to phone number via SMS',
+      tags: ['Auth'],
+      body: {
+        type: 'object',
+        required: ['phone'],
+        properties: {
+          phone: {
+            type: 'string',
+            pattern: '^\\+[1-9]\\d{6,14}$',
+            description: 'Phone number in E.164 format (e.g., +34612345678)',
+          },
+        },
+        examples: [{ phone: '+34612345678' }],
+      },
+      response: {
+        200: {
+          description: 'OTP sent successfully',
+          type: 'object',
+          properties: {
+            message: { type: 'string' },
+          },
+          examples: [{ message: 'OTP sent successfully' }],
+        },
+        400: {
+          description: 'Invalid phone format',
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Validation error',
+              statusCode: 400,
+              code: 'VALIDATION_ERROR',
+              details: { fields: ['phone: Invalid phone format'] },
+            },
+          ],
+        },
+        503: {
+          description: 'OTP service unavailable',
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Failed to send OTP. Please try again later.',
+              statusCode: 503,
+              code: 'SERVICE_UNAVAILABLE',
+            },
+          ],
+        },
+      },
+    },
+    handler: AuthController.sendOtp,
+  });
+
+  // POST /api/v1/auth/otp/verify - Verify OTP and login/register
+  app.post('/otp/verify', {
+    config: { rateLimit: authRateLimit },
+    schema: {
+      description: 'Verify OTP code and login or register user',
+      tags: ['Auth'],
+      body: {
+        type: 'object',
+        required: ['phone', 'code'],
+        properties: {
+          phone: {
+            type: 'string',
+            pattern: '^\\+[1-9]\\d{6,14}$',
+            description: 'Phone number in E.164 format',
+          },
+          code: {
+            type: 'string',
+            minLength: 6,
+            maxLength: 6,
+            description: '6-digit OTP code',
+          },
+          email: {
+            type: 'string',
+            format: 'email',
+            description: 'Email for new user (optional)',
+          },
+          role: {
+            type: 'string',
+            enum: ['OWNER', 'TENANT'],
+            description: 'Role for new user (defaults to TENANT)',
+          },
+        },
+        examples: [
+          { phone: '+34612345678', code: '123456' },
+          {
+            phone: '+34612345678',
+            code: '123456',
+            email: 'user@example.com',
+            role: 'OWNER',
+          },
+        ],
+      },
+      response: {
+        200: {
+          description: 'OTP verified, user logged in or registered',
+          type: 'object',
+          properties: {
+            user: {
+              type: 'object',
+              properties: {
+                id: { type: 'string', format: 'uuid' },
+                email: { type: 'string' },
+                phone: { type: 'string' },
+                isEmailVerified: { type: 'boolean' },
+                isPhoneVerified: { type: 'boolean' },
+                createdAt: { type: 'string', format: 'date-time' },
+              },
+            },
+            token: { type: 'string', description: 'JWT access token' },
+            isNewUser: { type: 'boolean', description: 'Whether a new account was created' },
+          },
+        },
+        400: {
+          description: 'Validation error',
+          ...errorResponseSchema,
+        },
+        401: {
+          description: 'Invalid or expired OTP',
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Invalid or expired OTP code',
+              statusCode: 401,
+              code: 'UNAUTHORIZED',
+            },
+          ],
+        },
+        409: {
+          description: 'Email already in use',
+          ...errorResponseSchema,
+          examples: [
+            {
+              error: 'Email already in use',
+              statusCode: 409,
+              code: 'CONFLICT',
+            },
+          ],
+        },
+      },
+    },
+    handler: AuthController.verifyOtp,
+  });
+
   // POST /api/v1/auth/reset-password - Reset password with token
   app.post('/reset-password', {
     config: { rateLimit: authRateLimit },
